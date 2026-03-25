@@ -16,6 +16,11 @@ const validSorts = new Set<SortOption>([
 ]);
 
 const validDateRanges = new Set<DateRangeOption>(["7d", "30d", "90d", "all"]);
+const validSegments = new Set<VideoFilters["segment"]>([
+  "all",
+  "winners",
+  "breakout",
+]);
 
 export function parseVideoFiltersFromSearchParams(searchParams: URLSearchParams) {
   const filters: Partial<VideoFilters> = {};
@@ -23,6 +28,7 @@ export function parseVideoFiltersFromSearchParams(searchParams: URLSearchParams)
   const sort = searchParams.get("sort");
   const dateRange = searchParams.get("range");
   const minViews = searchParams.get("minViews");
+  const segment = searchParams.get("segment");
 
   if (search) {
     filters.search = search.slice(0, 120);
@@ -42,6 +48,10 @@ export function parseVideoFiltersFromSearchParams(searchParams: URLSearchParams)
     if (Number.isFinite(parsedMinViews) && parsedMinViews > 0) {
       filters.minViews = parsedMinViews;
     }
+  }
+
+  if (segment && validSegments.has(segment as VideoFilters["segment"])) {
+    filters.segment = segment as VideoFilters["segment"];
   }
 
   return filters;
@@ -87,6 +97,10 @@ export function buildAnalysisSearchParams(
 
   if (filters.minViews > 0) {
     searchParams.set("minViews", `${Math.round(filters.minViews)}`);
+  }
+
+  if (filters.segment !== "all") {
+    searchParams.set("segment", filters.segment);
   }
 
   if (pagination) {

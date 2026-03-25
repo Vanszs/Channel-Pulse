@@ -35,7 +35,8 @@ export function FiltersBar({
     filters.search.trim() !== "" ||
     filters.dateRange !== "30d" ||
     filters.minViews !== 0 ||
-    filters.sort !== "momentum";
+    filters.sort !== "momentum" ||
+    filters.segment !== "all";
   const activeChips: Array<{
     label: string;
     onRemove: () => void;
@@ -74,6 +75,12 @@ export function FiltersBar({
                   ? "Sort: Recency"
                   : "Sort: Performance",
           onRemove: () => onChange({ sort: "momentum" }),
+        }
+      : null,
+    filters.segment !== "all"
+      ? {
+          label: filters.segment === "winners" ? "Winner set" : "Breakout only",
+          onRemove: () => onChange({ segment: "all" }),
         }
       : null,
   ].filter(
@@ -142,7 +149,7 @@ export function FiltersBar({
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.6fr_0.8fr_0.8fr_0.9fr_auto]">
         <label className="grid gap-2">
           <span className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-black/38">
-            Search title
+            Search titles or tags
           </span>
           <input
             type="search"

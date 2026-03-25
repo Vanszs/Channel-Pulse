@@ -21,7 +21,15 @@ function getBarColor(lifecycle: VideoAnalysis["lifecycle"]) {
 }
 
 export function PerformanceChart({ videos, onInspectVideo }: PerformanceChartProps) {
-  const chartVideos = videos.slice(0, 6);
+  const chartVideos = [...videos]
+    .sort((left, right) => {
+      return (
+        right.viewsPerDay - left.viewsPerDay ||
+        right.acceleration - left.acceleration ||
+        right.momentumScore - left.momentumScore
+      );
+    })
+    .slice(0, 6);
   const maxViewsPerDay = Math.max(...chartVideos.map((video) => video.viewsPerDay), 1);
 
   return (
@@ -32,7 +40,7 @@ export function PerformanceChart({ videos, onInspectVideo }: PerformanceChartPro
             Velocity chart
           </p>
           <h3 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-[var(--ink)]">
-            What is accelerating fastest right now
+            Which uploads are moving fastest right now
           </h3>
           <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
             Daily view velocity across the currently visible set. Use this to spot
@@ -56,53 +64,59 @@ export function PerformanceChart({ videos, onInspectVideo }: PerformanceChartPro
       </div>
 
       <div className="mt-6 space-y-3">
-        {chartVideos.map((video) => (
-          <button
-            type="button"
-            key={video.id}
-            onClick={() => onInspectVideo(video)}
-            className="grid gap-4 rounded-[26px] border border-black/8 bg-white/58 px-4 py-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-black/16 hover:bg-white/82 md:grid-cols-[74px_minmax(0,1.7fr)_minmax(170px,1fr)_auto_auto] md:items-center"
-          >
-            <div>
-              <p className="mono-data text-xs uppercase tracking-[0.22em] text-black/38">
-                Rank {video.rank}
-              </p>
-              <p className="mt-2 text-xs text-[var(--muted)]">
-                {formatRelativeDays(video.ageDays)}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-sm font-medium leading-6 text-[var(--ink)]">
-                {video.title}
-              </p>
-              <p className="mt-1 text-xs text-[var(--muted)]">
-                Published {formatDate(video.publishedAt)}
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="h-3 flex-1 overflow-hidden rounded-full bg-black/6">
-                <div
-                  className={`bar-grow h-full rounded-full ${getBarColor(video.lifecycle)}`}
-                  style={{
-                    width: `${Math.max(12, (video.viewsPerDay / maxViewsPerDay) * 100)}%`,
-                  }}
-                />
+        {chartVideos.length ? (
+          chartVideos.map((video, index) => (
+            <button
+              type="button"
+              key={video.id}
+              onClick={() => onInspectVideo(video)}
+              className="grid gap-4 rounded-[26px] border border-black/8 bg-white/58 px-4 py-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-black/16 hover:bg-white/82 md:grid-cols-[74px_minmax(0,1.7fr)_minmax(170px,1fr)_auto_auto] md:items-center"
+            >
+              <div>
+                <p className="mono-data text-xs uppercase tracking-[0.22em] text-black/38">
+                  Velocity #{index + 1}
+                </p>
+                <p className="mt-2 text-xs text-[var(--muted)]">
+                  {formatRelativeDays(video.ageDays)}
+                </p>
               </div>
-            </div>
 
-            <div className="flex items-center gap-3">
-              <span className="mono-data text-sm font-medium text-[var(--ink)] md:text-base">
-                {formatCompactNumber(video.viewsPerDay)}/day
-              </span>
-            </div>
+              <div>
+                <p className="text-sm font-medium leading-6 text-[var(--ink)]">
+                  {video.title}
+                </p>
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  Published {formatDate(video.publishedAt)}
+                </p>
+              </div>
 
-            <div className="flex items-center justify-start md:justify-end">
-              <TrendBadge trend={video.trend} lifecycle={video.lifecycle} />
-            </div>
-          </button>
-        ))}
+              <div className="flex items-center gap-3">
+                <div className="h-3 flex-1 overflow-hidden rounded-full bg-black/6">
+                  <div
+                    className={`bar-grow h-full rounded-full ${getBarColor(video.lifecycle)}`}
+                    style={{
+                      width: `${Math.max(12, (video.viewsPerDay / maxViewsPerDay) * 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="mono-data text-sm font-medium text-[var(--ink)] md:text-base">
+                  {formatCompactNumber(video.viewsPerDay)}/day
+                </span>
+              </div>
+
+              <div className="flex items-center justify-start md:justify-end">
+                <TrendBadge trend={video.trend} lifecycle={video.lifecycle} />
+              </div>
+            </button>
+          ))
+        ) : (
+          <div className="rounded-[24px] border border-black/8 bg-white/58 px-4 py-4 text-sm text-[var(--muted)]">
+            No videos match the current filters, so there is no velocity leaderboard to compare yet.
+          </div>
+        )}
       </div>
     </Panel>
   );

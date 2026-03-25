@@ -1,111 +1,20 @@
 import { Panel } from "@/components/ui/panel";
 import { formatCompactNumber, formatPercent } from "@/lib/formatters";
+import { buildTopicRows as buildSharedTopicRows } from "@/lib/topics";
 import type { VideoAnalysis } from "@/types/youtube";
 
 type SignalChartsProps = {
   videos: VideoAnalysis[];
+  channelName: string;
+  channelHandle: string;
   onTopicSelect: (topic: string) => void;
 };
-
-const STOP_WORDS = new Set([
-  "this",
-  "that",
-  "with",
-  "from",
-  "what",
-  "your",
-  "have",
-  "about",
-  "video",
-  "videos",
-  "shorts",
-  "short",
-  "yang",
-  "buat",
-  "banget",
-  "untuk",
-  "anime",
-]);
-
-function titleCase(value: string) {
-  return value
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((part) => part[0]?.toUpperCase() + part.slice(1).toLowerCase())
-    .join(" ");
-}
-
-function normalizeTopic(value: string) {
-  return titleCase(
-    value
-      .replace(/[_-]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim(),
-  );
-}
-
-function extractFallbackKeywords(title: string) {
-  return title
-    .split(/[^a-zA-Z0-9]+/)
-    .map((word) => word.trim())
-    .filter(
-      (word) =>
-        word.length >= 4 && !STOP_WORDS.has(word.toLowerCase()),
-    )
-    .slice(0, 3)
-    .map((word) => titleCase(word));
-}
-
-function buildTopicRows(videos: VideoAnalysis[]) {
-  const topics = new Map<
-    string,
-    {
-      count: number;
-      totalMomentum: number;
-      totalViewsPerDay: number;
-    }
-  >();
-
-  for (const video of videos) {
-    const sourceTopics = (video.tags?.length
-      ? video.tags.map(normalizeTopic)
-      : extractFallbackKeywords(video.title)
-    ).slice(0, 3);
-
-    for (const topic of sourceTopics) {
-      if (!topic) {
-        continue;
-      }
-
-      const current = topics.get(topic) ?? {
-        count: 0,
-        totalMomentum: 0,
-        totalViewsPerDay: 0,
-      };
-
-      topics.set(topic, {
-        count: current.count + 1,
-        totalMomentum: current.totalMomentum + video.momentumScore,
-        totalViewsPerDay: current.totalViewsPerDay + video.viewsPerDay,
-      });
-    }
-  }
-
-  return [...topics.entries()]
-    .map(([topic, stats]) => ({
-      topic,
-      count: stats.count,
-      averageMomentum: Math.round(stats.totalMomentum / stats.count),
-      averageViewsPerDay: Math.round(stats.totalViewsPerDay / stats.count),
-    }))
-    .sort((left, right) => {
-      return (
-        right.averageMomentum - left.averageMomentum ||
-        right.count - left.count ||
-        right.averageViewsPerDay - left.averageViewsPerDay
-      );
-    })
-    .slice(0, 5);
+function buildTopicChartRows(
+  videos: VideoAnalysis[],
+  channelName: string,
+  channelHandle: string,
+) {
+  return buildSharedTopicRows(videos, channelName, channelHandle).slice(0, 5);
 }
 
 function buildLifecycleRows(videos: VideoAnalysis[]) {
@@ -177,11 +86,22 @@ function buildRuntimeRows(videos: VideoAnalysis[]) {
     })
     .filter((bucket) => bucket.count > 0);
 
-  return rows.sort((left, right) => right.averageMomentum - left.averageMomentum);
+  return rows.sort((left, right) => {
+    return (
+      right.averageViewsPerDay - left.averageViewsPerDay ||
+      right.averageMomentum - left.averageMomentum ||
+      left.label.localeCompare(right.label)
+    );
+  });
 }
 
-export function SignalCharts({ videos, onTopicSelect }: SignalChartsProps) {
-  const topicRows = buildTopicRows(videos);
+export function SignalCharts({
+  videos,
+  channelName,
+  channelHandle,
+  onTopicSelect,
+}: SignalChartsProps) {
+  const topicRows = buildTopicChartRows(videos, channelName, channelHandle);
   const lifecycleRows = buildLifecycleRows(videos);
   const runtimeRows = buildRuntimeRows(videos);
   const maxTopicMomentum = Math.max(...topicRows.map((row) => row.averageMomentum), 1);
@@ -196,12 +116,18 @@ export function SignalCharts({ videos, onTopicSelect }: SignalChartsProps) {
               Topic chart
             </p>
             <h3 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-[var(--ink)]">
-              Which themes are carrying momentum
+              Repeated themes carrying momentum
             </h3>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--muted)]">
+              Only themes that repeat across at least two visible videos are shown
+              here, so the chart reflects a real pattern instead of isolated title words.
+            </p>
           </div>
-          <span className="rounded-full border border-black/8 bg-white/74 px-3 py-1 text-xs font-medium text-black/60">
-            Click to filter
-          </span>
+          {topicRows.length ? (
+            <span className="rounded-full border border-black/8 bg-white/74 px-3 py-1 text-xs font-medium text-black/60">
+              Click to filter
+            </span>
+          ) : null}
         </div>
 
         <div className="mt-6 space-y-3">
@@ -216,7 +142,8 @@ export function SignalCharts({ videos, onTopicSelect }: SignalChartsProps) {
                 <div>
                   <p className="text-sm font-medium text-[var(--ink)]">{row.topic}</p>
                   <p className="mt-1 text-xs text-[var(--muted)]">
-                    {row.count} videos · avg {formatCompactNumber(row.averageViewsPerDay)}/day
+                    {row.count} {row.count === 1 ? "video" : "videos"} · avg{" "}
+                    {formatCompactNumber(row.averageViewsPerDay)}/day
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -236,8 +163,8 @@ export function SignalCharts({ videos, onTopicSelect }: SignalChartsProps) {
             ))
           ) : (
             <div className="rounded-[24px] border border-black/8 bg-white/58 px-4 py-4 text-sm text-[var(--muted)]">
-              Topic tags are not available for this visible set yet, so no topic chart can
-              be drawn.
+              No repeated themes are strong enough in this visible set yet. Broaden
+              the date range or clear title and tag filters to surface stronger topic clusters.
             </div>
           )}
         </div>
@@ -251,35 +178,43 @@ export function SignalCharts({ videos, onTopicSelect }: SignalChartsProps) {
           How the visible set is distributed
         </h3>
 
-        <div className="mt-6 flex h-4 overflow-hidden rounded-full bg-black/6">
-          {lifecycleRows.map((row) => (
-            <div
-              key={row.label}
-              className={row.color}
-              style={{ width: `${row.share * 100}%` }}
-            />
-          ))}
-        </div>
-
-        <div className="mt-6 space-y-3">
-          {lifecycleRows.map((row) => (
-            <div
-              key={row.label}
-              className="flex items-center justify-between gap-4 rounded-[22px] border border-black/8 bg-white/58 px-4 py-3"
-            >
-              <div className="flex items-center gap-3">
-                <span className={`h-2.5 w-2.5 rounded-full ${row.color}`} />
-                <span className="text-sm font-medium text-[var(--ink)]">{row.label}</span>
-              </div>
-              <div className="text-right">
-                <p className="mono-data text-sm font-medium text-[var(--ink)]">
-                  {row.count}
-                </p>
-                <p className="text-xs text-[var(--muted)]">{formatPercent(row.share)}</p>
-              </div>
+        {videos.length ? (
+          <>
+            <div className="mt-6 flex h-4 overflow-hidden rounded-full bg-black/6">
+              {lifecycleRows.map((row) => (
+                <div
+                  key={row.label}
+                  className={row.color}
+                  style={{ width: `${row.share * 100}%` }}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+
+            <div className="mt-6 space-y-3">
+              {lifecycleRows.map((row) => (
+                <div
+                  key={row.label}
+                  className="flex items-center justify-between gap-4 rounded-[22px] border border-black/8 bg-white/58 px-4 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`h-2.5 w-2.5 rounded-full ${row.color}`} />
+                    <span className="text-sm font-medium text-[var(--ink)]">{row.label}</span>
+                  </div>
+                  <div className="text-right">
+                    <p className="mono-data text-sm font-medium text-[var(--ink)]">
+                      {row.count}
+                    </p>
+                    <p className="text-xs text-[var(--muted)]">{formatPercent(row.share)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="mt-6 rounded-[24px] border border-black/8 bg-white/58 px-4 py-4 text-sm text-[var(--muted)]">
+            No videos match the current filters, so lifecycle distribution is unavailable.
+          </div>
+        )}
       </Panel>
 
       <Panel className="fade-up rounded-[32px] px-6 py-6 sm:px-8 sm:py-7">
@@ -291,32 +226,38 @@ export function SignalCharts({ videos, onTopicSelect }: SignalChartsProps) {
         </h3>
 
         <div className="mt-6 space-y-4">
-          {runtimeRows.map((row) => (
-            <div key={row.label} className="space-y-2">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm font-medium text-[var(--ink)]">{row.label}</p>
-                  <p className="text-xs text-[var(--muted)]">{row.count} uploads</p>
+          {runtimeRows.length ? (
+            runtimeRows.map((row) => (
+              <div key={row.label} className="space-y-2">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-[var(--ink)]">{row.label}</p>
+                    <p className="text-xs text-[var(--muted)]">{row.count} uploads</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="mono-data text-sm font-medium text-[var(--ink)]">
+                      {formatCompactNumber(row.averageViewsPerDay)}/day
+                    </p>
+                    <p className="text-xs text-[var(--muted)]">
+                      Momentum {row.averageMomentum}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="mono-data text-sm font-medium text-[var(--ink)]">
-                    {formatCompactNumber(row.averageViewsPerDay)}/day
-                  </p>
-                  <p className="text-xs text-[var(--muted)]">
-                    Momentum {row.averageMomentum}
-                  </p>
+                <div className="h-2.5 overflow-hidden rounded-full bg-black/6">
+                  <div
+                    className="bar-grow h-full rounded-full bg-[linear-gradient(90deg,rgba(217,119,6,0.82),var(--accent))]"
+                    style={{
+                      width: `${Math.max(16, (row.averageViewsPerDay / maxRuntimeViews) * 100)}%`,
+                    }}
+                  />
                 </div>
               </div>
-              <div className="h-2.5 overflow-hidden rounded-full bg-black/6">
-                <div
-                  className="bar-grow h-full rounded-full bg-[linear-gradient(90deg,rgba(217,119,6,0.82),var(--accent))]"
-                  style={{
-                    width: `${Math.max(16, (row.averageViewsPerDay / maxRuntimeViews) * 100)}%`,
-                  }}
-                />
-              </div>
+            ))
+          ) : (
+            <div className="rounded-[24px] border border-black/8 bg-white/58 px-4 py-4 text-sm text-[var(--muted)]">
+              No videos match the current filters, so runtime bands cannot be compared yet.
             </div>
-          ))}
+          )}
         </div>
       </Panel>
     </div>

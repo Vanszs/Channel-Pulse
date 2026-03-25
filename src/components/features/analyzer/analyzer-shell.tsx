@@ -26,6 +26,7 @@ import {
   parsePaginationFromSearchParams,
   parseVideoFiltersFromSearchParams,
 } from "@/lib/url-state";
+import { pickFastestMover } from "@/lib/topics";
 import { applyVideoFilters, defaultVideoFilters, type VideoFilters } from "@/lib/video-filters";
 import type {
   AnalyzeChannelResponse,
@@ -59,6 +60,38 @@ function downloadCsv(filename: string, content: string) {
   anchor.click();
   anchor.remove();
   URL.revokeObjectURL(url);
+}
+
+function getSortLabel(sort: VideoFilters["sort"]) {
+  if (sort === "views") {
+    return "total views";
+  }
+
+  if (sort === "viewsPerDay") {
+    return "views per day";
+  }
+
+  if (sort === "recency") {
+    return "recency";
+  }
+
+  if (sort === "performance") {
+    return "performance score";
+  }
+
+  return "momentum score";
+}
+
+function getSegmentLabel(segment: VideoFilters["segment"]) {
+  if (segment === "winners") {
+    return "winner set";
+  }
+
+  if (segment === "breakout") {
+    return "breakout set";
+  }
+
+  return "filtered set";
 }
 
 export function AnalyzerShell() {
@@ -104,9 +137,6 @@ export function AnalyzerShell() {
         search: deferredSearch,
       })
     : [];
-  const chartVideos = visibleVideos.length
-    ? visibleVideos.slice(0, 6)
-    : analysis?.videos.slice(0, 6) ?? [];
   const paginatedResults = paginateItems(visibleVideos, pagination);
   const pageVideos = paginatedResults.items;
 
@@ -156,7 +186,21 @@ export function AnalyzerShell() {
       return;
     }
 
-    if (preset === "winners" || preset === "breakout" || preset === "momentum") {
+    if (preset === "winners") {
+      setFilters({
+        ...defaultVideoFilters,
+        dateRange: "30d",
+        sort: "momentum",
+        segment: "winners",
+      });
+    } else if (preset === "breakout") {
+      setFilters({
+        ...defaultVideoFilters,
+        dateRange: "30d",
+        sort: "viewsPerDay",
+        segment: "breakout",
+      });
+    } else if (preset === "momentum") {
       setFilters({
         ...defaultVideoFilters,
         dateRange: "30d",
@@ -225,6 +269,7 @@ export function AnalyzerShell() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-channel-pulse-request": "analyze",
         },
         body: JSON.stringify({
           channelUrl: normalized.normalizedUrl,
@@ -313,9 +358,18 @@ export function AnalyzerShell() {
       return;
     }
 
-    const activeSet = visibleVideos.length ? visibleVideos : analysis.videos;
-    const leader = activeSet[0];
-    const summary = `${analysis.channel.name} currently has ${activeSet.length} videos in this filtered view. Leading video: ${leader.title} at ${formatCompactNumber(leader.viewsPerDay)} views/day. Sort: ${filters.sort}. Source: ${analysis.channel.url}`;
+    const activeSet = visibleVideos;
+    const summary = activeSet.length
+      ? `${analysis.channel.name} currently has ${activeSet.length} videos in the ${getSegmentLabel(
+          filters.segment,
+        )}. The current table is sorted by ${getSortLabel(filters.sort)}. Top row: ${
+          activeSet[0].title
+        }. Fastest mover in this view: ${
+          pickFastestMover(activeSet)?.title ?? activeSet[0].title
+        } at ${formatCompactNumber(
+          pickFastestMover(activeSet)?.viewsPerDay ?? activeSet[0].viewsPerDay,
+        )}/day. Source: ${analysis.channel.url}`
+      : `${analysis.channel.name} currently has no videos in the active filtered view. Clear the search, widen the date range, or lower the minimum views threshold before sharing this brief. Source: ${analysis.channel.url}`;
 
     try {
       await navigator.clipboard.writeText(summary);
@@ -356,7 +410,7 @@ export function AnalyzerShell() {
     const filename = `${analysis.channel.name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")}-winners.csv`;
+      .replace(/^-+|-+$/g, "")}-${filters.segment}-${filters.sort}-${filters.dateRange}.csv`;
 
     downloadCsv(filename, csv);
   }
@@ -605,19 +659,21 @@ export function AnalyzerShell() {
 
             <div className="grid gap-6 xl:grid-cols-[1.22fr_0.98fr]">
               <div id="chart-panel">
-                <PerformanceChart
-                  videos={chartVideos}
+              <PerformanceChart
+                  videos={visibleVideos}
                   onInspectVideo={inspectVideo}
                 />
               </div>
               <div id="insight-panel">
-                <InsightsPanel analysis={analysis} />
+                <InsightsPanel analysis={analysis} activeSort={filters.sort} />
               </div>
             </div>
 
             <div id="signal-charts">
               <SignalCharts
-                videos={visibleVideos.length ? visibleVideos : analysis.videos}
+                videos={visibleVideos}
+                channelName={analysis.channel.name}
+                channelHandle={analysis.channel.handle}
                 onTopicSelect={handleTagSelect}
               />
             </div>
@@ -645,6 +701,8 @@ export function AnalyzerShell() {
               <VideoTable
                 videos={pageVideos}
                 totalCount={visibleVideos.length}
+                channelName={analysis.channel.name}
+                channelHandle={analysis.channel.handle}
                 page={paginatedResults.currentPage}
                 pageSize={paginatedResults.pageSize}
                 totalPages={paginatedResults.totalPages}

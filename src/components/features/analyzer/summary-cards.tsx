@@ -44,8 +44,8 @@ export function SummaryCards({ analysis, onPresetSelect }: SummaryCardsProps) {
       <MetricCard
         label="Breakout count"
         value={`${metrics.breakoutCount}`}
-        detail={`Median performance score is ${metrics.medianPerformance}/100.`}
-        actionLabel="Open breakout ranking"
+        detail="Uploads in the current month window that are still accelerating above baseline."
+        actionLabel="Show breakout only"
         onClick={() => onPresetSelect("breakout")}
       />
     </div>

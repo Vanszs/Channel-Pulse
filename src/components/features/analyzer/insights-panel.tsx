@@ -4,6 +4,7 @@ import type { ChannelAnalysis, ScoreVector } from "@/types/youtube";
 
 type InsightsPanelProps = {
   analysis: ChannelAnalysis;
+  activeSort: "performance" | "views" | "viewsPerDay" | "recency" | "momentum";
 };
 
 const weightLabels: Record<keyof ScoreVector, string> = {
@@ -14,7 +15,27 @@ const weightLabels: Record<keyof ScoreVector, string> = {
   recency: "Recency",
 };
 
-export function InsightsPanel({ analysis }: InsightsPanelProps) {
+function getSortDescription(sort: InsightsPanelProps["activeSort"]) {
+  if (sort === "views") {
+    return "The table is currently ordered by total views.";
+  }
+
+  if (sort === "viewsPerDay") {
+    return "The table is currently ordered by views per day.";
+  }
+
+  if (sort === "recency") {
+    return "The table is currently ordered by most recent publish date.";
+  }
+
+  if (sort === "performance") {
+    return "The table is currently ordered by performance score.";
+  }
+
+  return "The table is currently ordered by momentum score.";
+}
+
+export function InsightsPanel({ analysis, activeSort }: InsightsPanelProps) {
   const weightEntries = Object.entries(
     analysis.scoreExplanation.weights,
   ) as Array<[keyof ScoreVector, number]>;
@@ -53,7 +74,14 @@ export function InsightsPanel({ analysis }: InsightsPanelProps) {
 
       <div>
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-black/42">
-          Ranking model
+          List order
+        </p>
+        <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
+          {getSortDescription(activeSort)}
+        </p>
+
+        <p className="mt-5 text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-black/42">
+          Performance score model
         </p>
         <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
           {analysis.scoreExplanation.formula}

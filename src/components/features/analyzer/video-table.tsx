@@ -2,11 +2,14 @@ import { PaginationControls } from "@/components/features/analyzer/pagination-co
 import { VideoThumbnail } from "@/components/ui/video-thumbnail";
 import { TrendBadge } from "@/components/ui/trend-badge";
 import { formatCompactNumber, formatDate, formatRelativeDays } from "@/lib/formatters";
+import { buildVideoTopicChips } from "@/lib/topics";
 import type { VideoAnalysis } from "@/types/youtube";
 
 type VideoTableProps = {
   videos: VideoAnalysis[];
   totalCount: number;
+  channelName: string;
+  channelHandle: string;
   page: number;
   pageSize: number;
   totalPages: number;
@@ -28,6 +31,8 @@ function formatEngagement(value: number | undefined) {
 export function VideoTable({
   videos,
   totalCount,
+  channelName,
+  channelHandle,
   page,
   pageSize,
   totalPages,
@@ -42,7 +47,7 @@ export function VideoTable({
       <div className="fade-up panel rounded-[32px] px-6 py-8 text-center sm:px-8">
         <p className="text-lg font-medium text-[var(--ink)]">No videos match the current filters.</p>
         <p className="mt-2 text-sm text-[var(--muted)]">
-          Widen the date window, lower the minimum views, or clear the title search.
+          Widen the date window, lower the minimum views, or clear the title or tag search.
         </p>
       </div>
     );
@@ -79,11 +84,19 @@ export function VideoTable({
 
         <div className="lg:hidden">
           <div className="space-y-4 px-4 py-4 sm:px-6">
-            {videos.map((video) => (
-              <article
-                key={video.id}
-                className="rounded-[28px] border border-black/8 bg-white/62 p-4"
-              >
+            {videos.map((video) => {
+              const topicChips = buildVideoTopicChips(
+                video,
+                channelName,
+                channelHandle,
+                2,
+              );
+
+              return (
+                <article
+                  key={video.id}
+                  className="rounded-[28px] border border-black/8 bg-white/62 p-4"
+                >
                 <div className="flex gap-4">
                   <a
                     href={`https://www.youtube.com/watch?v=${video.id}`}
@@ -178,7 +191,7 @@ export function VideoTable({
                   >
                     Open on YouTube
                   </a>
-                  {(video.tags ?? []).slice(0, 2).map((tag) => (
+                  {topicChips.map((tag) => (
                     <button
                       key={tag}
                       type="button"
@@ -189,8 +202,9 @@ export function VideoTable({
                     </button>
                   ))}
                 </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         </div>
 
@@ -208,11 +222,19 @@ export function VideoTable({
               <span>Views/day</span>
             </div>
 
-            {videos.map((video) => (
-              <div
-                key={video.id}
-                className="grid grid-cols-[68px_3fr_1.2fr_1fr_1fr_0.9fr_0.9fr_1.15fr_1fr] gap-4 border-b border-black/6 px-8 py-5 last:border-b-0"
-              >
+            {videos.map((video) => {
+              const topicChips = buildVideoTopicChips(
+                video,
+                channelName,
+                channelHandle,
+                2,
+              );
+
+              return (
+                <div
+                  key={video.id}
+                  className="grid grid-cols-[68px_3fr_1.2fr_1fr_1fr_0.9fr_0.9fr_1.15fr_1fr] gap-4 border-b border-black/6 px-8 py-5 last:border-b-0"
+                >
                 <div className="mono-data text-sm font-medium text-[var(--ink)]">
                   #{video.rank}
                 </div>
@@ -241,7 +263,7 @@ export function VideoTable({
                     </a>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <p className="text-xs text-[var(--muted)]">
-                      {video.durationMinutes}m runtime
+                        {video.durationMinutes}m runtime
                       </p>
                       <a
                         href={`https://www.youtube.com/watch?v=${video.id}`}
@@ -251,6 +273,16 @@ export function VideoTable({
                       >
                         Watch
                       </a>
+                      {topicChips.map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => onTagPick(tag)}
+                          className="rounded-full border border-black/8 bg-black/4 px-2.5 py-1 text-[0.68rem] font-medium text-black/60 transition hover:border-black/18 hover:bg-white"
+                        >
+                          {tag}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -286,8 +318,9 @@ export function VideoTable({
                 <div className="mono-data text-sm font-medium text-[var(--ink)]">
                   {formatCompactNumber(video.viewsPerDay)}
                 </div>
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         </div>
 

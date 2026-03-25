@@ -7,6 +7,7 @@ import {
   formatPercent,
   truncateText,
 } from "@/lib/formatters";
+import { pickFastestMover } from "@/lib/topics";
 import type { ChannelAnalysis } from "@/types/youtube";
 
 type ChannelHeaderProps = {
@@ -25,7 +26,7 @@ export function ChannelHeader({
   const winnerRate = analysis.metrics.videosThisMonth
     ? analysis.metrics.monthlyWinners / analysis.metrics.videosThisMonth
     : 0;
-  const leadingVideo = analysis.videos[0];
+  const leadingVideo = pickFastestMover(analysis.videos);
 
   return (
     <Panel className="fade-up rounded-[32px] px-6 py-6 sm:px-8 sm:py-7">
@@ -59,18 +60,24 @@ export function ChannelHeader({
             </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            {analysis.channel.focusTags.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => onTagSelect(tag)}
-                className="rounded-full border border-black/8 bg-white/70 px-3 py-1.5 text-xs font-medium text-black/62 transition hover:border-black/18 hover:bg-white"
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
+          {analysis.channel.focusTags.length ? (
+            <div className="mt-5 flex flex-wrap gap-2">
+              {analysis.channel.focusTags.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => onTagSelect(tag)}
+                  className="rounded-full border border-black/8 bg-white/70 px-3 py-1.5 text-xs font-medium text-black/62 transition hover:border-black/18 hover:bg-white"
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-5 text-sm text-[var(--muted)]">
+              No repeated content themes are strong enough yet to turn into quick filters.
+            </p>
+          )}
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             <article className="rounded-[24px] border border-black/8 bg-white/62 p-4">
@@ -97,7 +104,7 @@ export function ChannelHeader({
               </p>
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
                 {leadingVideo
-                  ? truncateText(`Current leader: ${leadingVideo.title}`, 78)
+                  ? truncateText(`Fastest upload right now: ${leadingVideo.title}`, 78)
                   : "No recent upload data is available for this channel yet."}
               </p>
             </article>
@@ -110,8 +117,7 @@ export function ChannelHeader({
                 {formatCompactNumber(analysis.metrics.totalRecentViews)}
               </p>
               <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                {analysis.metrics.breakoutCount} uploads are tagged breakout in the
-                current scan.
+                Combined views from uploads published during the current 30-day scan window.
               </p>
             </article>
           </div>

@@ -5,6 +5,7 @@ export type VideoFilters = {
   sort: SortOption;
   dateRange: DateRangeOption;
   minViews: number;
+  segment: "all" | "winners" | "breakout";
 };
 
 export const defaultVideoFilters: VideoFilters = {
@@ -12,6 +13,7 @@ export const defaultVideoFilters: VideoFilters = {
   sort: "momentum",
   dateRange: "30d",
   minViews: 0,
+  segment: "all",
 };
 
 function matchesDateRange(video: VideoAnalysis, dateRange: DateRangeOption) {
@@ -42,8 +44,18 @@ export function applyVideoFilters(
       video.title.toLowerCase().includes(searchQuery) ||
       (video.tags ?? []).some((tag) => tag.toLowerCase().includes(searchQuery));
     const matchesViews = video.views >= filters.minViews;
+    const matchesSegment =
+      filters.segment === "all" ||
+      (filters.segment === "breakout" && video.lifecycle === "Breakout") ||
+      (filters.segment === "winners" &&
+        (video.momentumScore >= 72 || video.lifecycle === "Breakout"));
 
-    return matchesSearch && matchesViews && matchesDateRange(video, filters.dateRange);
+    return (
+      matchesSearch &&
+      matchesViews &&
+      matchesSegment &&
+      matchesDateRange(video, filters.dateRange)
+    );
   });
 
   const sortedVideos = [...filteredVideos].sort((left, right) => {

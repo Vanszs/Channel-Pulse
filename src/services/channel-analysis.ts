@@ -5,6 +5,12 @@ import {
 } from "@/lib/formatters";
 import { average, buildVideoAnalysis, median, sum } from "@/lib/scoring";
 import {
+  buildTopicRows,
+  extractFocusTags,
+  pickFastestMover,
+  pickPrimaryCategory,
+} from "@/lib/topics";
+import {
   fetchYouTubeChannelSnapshot,
   type ChannelAnalysisError,
 } from "@/services/youtube-api";
@@ -16,49 +22,6 @@ import type {
   RawVideo,
   VideoAnalysis,
 } from "@/types/youtube";
-
-const STOP_WORDS = new Set([
-  "that",
-  "this",
-  "with",
-  "from",
-  "your",
-  "into",
-  "what",
-  "they",
-  "still",
-  "have",
-  "behind",
-  "about",
-  "where",
-  "after",
-  "before",
-  "more",
-  "make",
-  "like",
-  "kept",
-  "over",
-  "them",
-  "than",
-  "week",
-  "channel",
-  "video",
-  "videos",
-  "shorts",
-  "short",
-  "how",
-  "why",
-  "best",
-  "guide",
-]);
-
-function titleCase(value: string) {
-  return value
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((part) => part[0]?.toUpperCase() + part.slice(1).toLowerCase())
-    .join(" ");
-}
 
 function getInitials(name: string) {
   return name
@@ -114,98 +77,34 @@ function buildUploadCadence(videos: RawVideo[]) {
   return `${uploadsPerWeek} ${uploadsPerWeek === 1 ? "upload" : "uploads"} / week`;
 }
 
-function extractCommonKeyword(videos: Array<Pick<VideoAnalysis, "title">>) {
-  const counts = new Map<string, number>();
-
-  for (const video of videos) {
-    for (const word of video.title.toLowerCase().split(/[^a-z0-9]+/)) {
-      if (word.length < 4 || STOP_WORDS.has(word)) {
-        continue;
-      }
-
-      counts.set(word, (counts.get(word) ?? 0) + 1);
-    }
-  }
-
-  const [keyword] =
-    [...counts.entries()].sort((left, right) => right[1] - left[1])[0] ?? [];
-
-  return keyword ? titleCase(keyword) : "Comparison";
-}
-
-function extractFocusTags(
+function buildCategory(
   topicCategories: string[],
-  videos: RawVideo[],
-  limit = 3,
+  channelName: string,
+  channelHandle: string,
 ) {
-  const tags: string[] = [];
-
-  for (const topicCategory of topicCategories) {
-    try {
-      const url = new URL(topicCategory);
-      tags.push(titleCase(decodeURIComponent(url.pathname.split("/").pop() ?? "")));
-    } catch {
-      continue;
-    }
-  }
-
-  const keywordCounts = new Map<string, number>();
-
-  for (const video of videos) {
-    for (const tag of video.tags ?? []) {
-      const normalizedTag = tag
-        .replace(/[_-]+/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-
-      if (normalizedTag.length >= 4) {
-        keywordCounts.set(
-          normalizedTag,
-          (keywordCounts.get(normalizedTag) ?? 0) + 2,
-        );
-      }
-    }
-
-    for (const word of video.title.split(/[^A-Za-z0-9]+/)) {
-      const normalizedWord = word.trim();
-
-      if (
-        normalizedWord.length >= 4 &&
-        !STOP_WORDS.has(normalizedWord.toLowerCase())
-      ) {
-        keywordCounts.set(
-          normalizedWord,
-          (keywordCounts.get(normalizedWord) ?? 0) + 1,
-        );
-      }
-    }
-  }
-
-  const keywordTags = [...keywordCounts.entries()]
-    .sort((left, right) => right[1] - left[1])
-    .map(([keyword]) => titleCase(keyword))
-    .filter((keyword) => !tags.includes(keyword));
-
-  return [...tags, ...keywordTags].filter(Boolean).slice(0, limit);
-}
-
-function buildCategory(topicCategories: string[], videos: RawVideo[]) {
-  const [firstTopic] = extractFocusTags(topicCategories, videos, 1);
-  return firstTopic ?? "YouTube channel";
+  return pickPrimaryCategory(topicCategories, channelName, channelHandle) ?? "YouTube channel";
 }
 
 function buildChannelProfile(
   channelSnapshot: Awaited<ReturnType<typeof fetchYouTubeChannelSnapshot>>["channel"],
-  videos: RawVideo[],
+  videos: VideoAnalysis[],
 ): ChannelProfile {
-  const focusTags = extractFocusTags(channelSnapshot.topicCategories, videos);
+  const focusTags = extractFocusTags(
+    videos,
+    channelSnapshot.name,
+    channelSnapshot.handle,
+  );
 
   return {
     id: channelSnapshot.id,
     name: channelSnapshot.name,
     handle: channelSnapshot.handle,
     url: channelSnapshot.url,
-    category: buildCategory(channelSnapshot.topicCategories, videos),
+    category: buildCategory(
+      channelSnapshot.topicCategories,
+      channelSnapshot.name,
+      channelSnapshot.handle,
+    ),
     description: cleanDescription(channelSnapshot.description),
     subscriberCount: channelSnapshot.subscriberCount,
     avatarText: getInitials(channelSnapshot.name) || "YT",
@@ -238,16 +137,19 @@ function buildInsights(
   videos: VideoAnalysis[],
   metrics: ChannelMetrics,
 ) {
-  const topVideos = videos.slice(0, 5);
-  const leader = topVideos[0];
-  const keyword = extractCommonKeyword(topVideos);
+  const topVideos = videos
+    .filter((video) => video.ageDays <= 30)
+    .slice(0, 5);
+  const leader = pickFastestMover(videos);
+  const keyword =
+    buildTopicRows(topVideos, profile.name, profile.handle)[0]?.topic ?? null;
   const topAverageDuration = average(topVideos.map((video) => video.durationMinutes));
   const channelAverageDuration = average(videos.map((video) => video.durationMinutes));
   const averageGap = averageGapInDays(videos);
 
   return [
     {
-      title: "Current winner",
+      title: "Fastest mover",
       detail: `${leader.title} is leading at ${formatCompactNumber(
         leader.viewsPerDay,
       )} views/day, ${formatSignedPercent(
@@ -257,11 +159,17 @@ function buildInsights(
     },
     {
       title: "Pattern to copy",
-      detail: `The strongest uploads skew ${
-        topAverageDuration <= channelAverageDuration
-          ? "shorter and more tactical"
-          : "a little deeper than the channel average"
-      }, and "${keyword}" keeps repeating across the top titles.`,
+      detail: keyword
+        ? `The strongest uploads skew ${
+            topAverageDuration <= channelAverageDuration
+              ? "shorter and more tactical"
+              : "a little deeper than the channel average"
+          }, and "${keyword}" is one of the clearest repeated themes inside the current winners.`
+        : `The strongest uploads skew ${
+            topAverageDuration <= channelAverageDuration
+              ? "shorter and more tactical"
+              : "a little deeper than the channel average"
+          }, but no single theme repeats often enough yet to call one content cluster dominant.`,
       tone: "neutral",
     },
     {
@@ -280,13 +188,13 @@ function buildInsights(
 
 export async function analyzeChannel(channelUrl: string): Promise<ChannelAnalysis> {
   const snapshot = await fetchYouTubeChannelSnapshot(channelUrl);
-  const channel = buildChannelProfile(snapshot.channel, snapshot.videos);
   const videos = buildVideoAnalysis(snapshot.videos);
 
   if (!videos.length) {
     throw new Error("This channel does not have enough public videos to analyze.");
   }
 
+  const channel = buildChannelProfile(snapshot.channel, videos);
   const metrics = buildMetrics(videos);
 
   return {
