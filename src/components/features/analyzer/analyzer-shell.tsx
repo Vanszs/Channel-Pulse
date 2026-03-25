@@ -8,12 +8,24 @@ import { FiltersBar } from "@/components/features/analyzer/filters-bar";
 import { InsightsPanel } from "@/components/features/analyzer/insights-panel";
 import { PerformanceChart } from "@/components/features/analyzer/performance-chart";
 import { ResultsSkeleton } from "@/components/features/analyzer/results-skeleton";
+import { SignalCharts } from "@/components/features/analyzer/signal-charts";
 import { SummaryCards } from "@/components/features/analyzer/summary-cards";
 import { VideoTable } from "@/components/features/analyzer/video-table";
 import { Panel } from "@/components/ui/panel";
 import { buildVideosCsv } from "@/lib/csv";
 import { normalizeYouTubeChannelInput } from "@/lib/channel-url";
 import { formatCompactNumber } from "@/lib/formatters";
+import {
+  clampPage,
+  defaultPaginationState,
+  paginateItems,
+  type PaginationState,
+} from "@/lib/pagination";
+import {
+  buildAnalysisSearchParams,
+  parsePaginationFromSearchParams,
+  parseVideoFiltersFromSearchParams,
+} from "@/lib/url-state";
 import { applyVideoFilters, defaultVideoFilters, type VideoFilters } from "@/lib/video-filters";
 import type {
   AnalyzeChannelResponse,
@@ -51,11 +63,15 @@ function downloadCsv(filename: string, content: string) {
 
 export function AnalyzerShell() {
   const [channelUrl, setChannelUrl] = useState("");
+  const [activeChannelUrl, setActiveChannelUrl] = useState("");
   const [analysis, setAnalysis] = useState<ChannelAnalysis | null>(null);
   const [filters, setFilters] = useState<VideoFilters>(defaultVideoFilters);
+  const [pagination, setPagination] = useState<PaginationState>(defaultPaginationState);
   const [viewState, setViewState] = useState<ViewState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [copyLabel, setCopyLabel] = useState("Copy brief");
+  const [shareLabel, setShareLabel] = useState("Copy link");
+  const [hasHydratedFromUrl, setHasHydratedFromUrl] = useState(false);
   const deferredSearch = useDeferredValue(filters.search);
 
   useEffect(() => {
@@ -70,6 +86,18 @@ export function AnalyzerShell() {
     return () => window.clearTimeout(timeout);
   }, [copyLabel]);
 
+  useEffect(() => {
+    if (shareLabel === "Copy link") {
+      return undefined;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setShareLabel("Copy link");
+    }, 1800);
+
+    return () => window.clearTimeout(timeout);
+  }, [shareLabel]);
+
   const visibleVideos = analysis
     ? applyVideoFilters(analysis.videos, {
         ...filters,
@@ -79,12 +107,39 @@ export function AnalyzerShell() {
   const chartVideos = visibleVideos.length
     ? visibleVideos.slice(0, 6)
     : analysis?.videos.slice(0, 6) ?? [];
+  const paginatedResults = paginateItems(visibleVideos, pagination);
+  const pageVideos = paginatedResults.items;
 
   function updateFilters(patch: Partial<VideoFilters>) {
     setFilters((currentFilters) => ({
       ...currentFilters,
       ...patch,
     }));
+    setPagination((currentPagination) => ({
+      ...currentPagination,
+      page: 1,
+    }));
+  }
+
+  function handlePageChange(page: number) {
+    setPagination((currentPagination) => ({
+      ...currentPagination,
+      page,
+    }));
+    requestAnimationFrame(() => scrollToSection("video-results"));
+  }
+
+  function handlePageSizeChange(pageSize: number) {
+    setPagination((currentPagination) => {
+      const firstVisibleItemIndex =
+        (currentPagination.page - 1) * currentPagination.pageSize;
+
+      return {
+        pageSize,
+        page: Math.floor(firstVisibleItemIndex / pageSize) + 1,
+      };
+    });
+    requestAnimationFrame(() => scrollToSection("video-results"));
   }
 
   function applyPreset(
@@ -126,6 +181,10 @@ export function AnalyzerShell() {
         sort: "viewsPerDay",
       });
     }
+    setPagination((currentPagination) => ({
+      ...currentPagination,
+      page: 1,
+    }));
 
     requestAnimationFrame(() => scrollToSection("video-results"));
   }
@@ -145,7 +204,11 @@ export function AnalyzerShell() {
     requestAnimationFrame(() => scrollToSection("video-results"));
   }
 
-  async function runAnalysis(nextChannelUrl: string) {
+  async function runAnalysis(
+    nextChannelUrl: string,
+    nextFilterPatch?: Partial<VideoFilters>,
+    nextPaginationPatch?: Partial<PaginationState>,
+  ) {
     const normalized = normalizeYouTubeChannelInput(nextChannelUrl);
 
     if (!normalized.ok) {
@@ -178,10 +241,16 @@ export function AnalyzerShell() {
         setFilters({
           ...defaultVideoFilters,
           dateRange: payload.data.defaultDateRange,
+          ...nextFilterPatch,
+        });
+        setPagination({
+          ...defaultPaginationState,
+          ...nextPaginationPatch,
         });
       });
 
       setChannelUrl(normalized.normalizedUrl);
+      setActiveChannelUrl(normalized.normalizedUrl);
       setViewState("success");
     } catch (caughtError) {
       setViewState("error");
@@ -193,19 +262,88 @@ export function AnalyzerShell() {
     }
   }
 
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const sharedChannelUrl = searchParams.get("channel");
+    const sharedFilters = parseVideoFiltersFromSearchParams(searchParams);
+    const sharedPagination = parsePaginationFromSearchParams(searchParams);
+
+    if (sharedChannelUrl) {
+      setChannelUrl(sharedChannelUrl);
+      void runAnalysis(sharedChannelUrl, sharedFilters, sharedPagination);
+    }
+
+    setHasHydratedFromUrl(true);
+  }, []);
+
+  useEffect(() => {
+    const nextPage = clampPage(
+      pagination.page,
+      visibleVideos.length,
+      pagination.pageSize,
+    );
+
+    if (nextPage !== pagination.page) {
+      setPagination((currentPagination) => ({
+        ...currentPagination,
+        page: nextPage,
+      }));
+    }
+  }, [pagination.page, pagination.pageSize, visibleVideos.length]);
+
+  useEffect(() => {
+    if (!hasHydratedFromUrl || !analysis || !activeChannelUrl) {
+      return;
+    }
+
+    const searchParams = buildAnalysisSearchParams(
+      activeChannelUrl,
+      filters,
+      analysis.defaultDateRange,
+      pagination,
+    );
+    const query = searchParams.toString();
+    const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+
+    window.history.replaceState({}, "", nextUrl);
+  }, [activeChannelUrl, analysis, filters, hasHydratedFromUrl, pagination]);
+
   async function handleCopyBrief() {
     if (!analysis) {
       return;
     }
 
-    const leader = analysis.videos[0];
-    const summary = `${analysis.channel.name} has ${analysis.metrics.monthlyWinners} current winners this month. Top video: ${leader.title} at ${formatCompactNumber(leader.viewsPerDay)} views/day. Source: ${analysis.channel.url}`;
+    const activeSet = visibleVideos.length ? visibleVideos : analysis.videos;
+    const leader = activeSet[0];
+    const summary = `${analysis.channel.name} currently has ${activeSet.length} videos in this filtered view. Leading video: ${leader.title} at ${formatCompactNumber(leader.viewsPerDay)} views/day. Sort: ${filters.sort}. Source: ${analysis.channel.url}`;
 
     try {
       await navigator.clipboard.writeText(summary);
       setCopyLabel("Copied");
     } catch {
       setCopyLabel("Retry copy");
+    }
+  }
+
+  async function handleCopyShareLink() {
+    if (!analysis || !activeChannelUrl) {
+      return;
+    }
+
+    const searchParams = buildAnalysisSearchParams(
+      activeChannelUrl,
+      filters,
+      analysis.defaultDateRange,
+      pagination,
+    );
+    const query = searchParams.toString();
+    const shareUrl = `${window.location.origin}${window.location.pathname}${query ? `?${query}` : ""}`;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareLabel("Link copied");
+    } catch {
+      setShareLabel("Retry link");
     }
   }
 
@@ -428,6 +566,7 @@ export function AnalyzerShell() {
               {[
                 { label: "Overview", target: "channel-overview" },
                 { label: "KPI summary", target: "kpi-summary" },
+                { label: "Signal charts", target: "signal-charts" },
                 { label: "Insights", target: "insight-panel" },
                 { label: "Video results", target: "video-results" },
               ].map((item) => (
@@ -476,25 +615,43 @@ export function AnalyzerShell() {
               </div>
             </div>
 
+            <div id="signal-charts">
+              <SignalCharts
+                videos={visibleVideos.length ? visibleVideos : analysis.videos}
+                onTopicSelect={handleTagSelect}
+              />
+            </div>
+
             <FiltersBar
               filters={filters}
               totalCount={analysis.videos.length}
               visibleCount={visibleVideos.length}
               onChange={updateFilters}
-              onReset={() =>
+              onReset={() => {
                 setFilters({
                   ...defaultVideoFilters,
                   dateRange: analysis.defaultDateRange,
-                })
-              }
+                });
+                setPagination(defaultPaginationState);
+              }}
               onExport={handleExport}
+              onCopyShareLink={handleCopyShareLink}
               exportDisabled={!visibleVideos.length}
+              shareLabel={shareLabel}
               onPresetSelect={applyPreset}
             />
 
             <div id="video-results">
               <VideoTable
-                videos={visibleVideos}
+                videos={pageVideos}
+                totalCount={visibleVideos.length}
+                page={paginatedResults.currentPage}
+                pageSize={paginatedResults.pageSize}
+                totalPages={paginatedResults.totalPages}
+                startIndex={paginatedResults.startIndex}
+                endIndex={paginatedResults.endIndex}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
                 onTagPick={handleTagSelect}
               />
             </div>

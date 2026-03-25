@@ -1,3 +1,4 @@
+import { PaginationControls } from "@/components/features/analyzer/pagination-controls";
 import { VideoThumbnail } from "@/components/ui/video-thumbnail";
 import { TrendBadge } from "@/components/ui/trend-badge";
 import { formatCompactNumber, formatDate, formatRelativeDays } from "@/lib/formatters";
@@ -5,6 +6,14 @@ import type { VideoAnalysis } from "@/types/youtube";
 
 type VideoTableProps = {
   videos: VideoAnalysis[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  startIndex: number;
+  endIndex: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
   onTagPick: (tag: string) => void;
 };
 
@@ -16,8 +25,19 @@ function formatEngagement(value: number | undefined) {
   return formatCompactNumber(value);
 }
 
-export function VideoTable({ videos, onTagPick }: VideoTableProps) {
-  if (!videos.length) {
+export function VideoTable({
+  videos,
+  totalCount,
+  page,
+  pageSize,
+  totalPages,
+  startIndex,
+  endIndex,
+  onPageChange,
+  onPageSizeChange,
+  onTagPick,
+}: VideoTableProps) {
+  if (!totalCount) {
     return (
       <div className="fade-up panel rounded-[32px] px-6 py-8 text-center sm:px-8">
         <p className="text-lg font-medium text-[var(--ink)]">No videos match the current filters.</p>
@@ -42,6 +62,19 @@ export function VideoTable({ videos, onTagPick }: VideoTableProps) {
             Open a title to watch the source video, or tap a tag to turn a recurring
             topic into a filtered view.
           </p>
+        </div>
+
+        <div className="border-b border-black/8 px-6 py-4 sm:px-8">
+          <PaginationControls
+            page={page}
+            pageSize={pageSize}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
         </div>
 
         <div className="lg:hidden">
@@ -256,6 +289,19 @@ export function VideoTable({ videos, onTagPick }: VideoTableProps) {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="border-t border-black/8 px-6 py-4 sm:px-8">
+          <PaginationControls
+            page={page}
+            pageSize={pageSize}
+            totalPages={totalPages}
+            totalItems={totalCount}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
         </div>
       </div>
     </div>

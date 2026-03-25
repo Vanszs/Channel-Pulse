@@ -1,5 +1,7 @@
 "use client";
 
+import { TrendBadge } from "@/components/ui/trend-badge";
+import { formatCompactNumber } from "@/lib/formatters";
 import type { VideoFilters } from "@/lib/video-filters";
 
 type FiltersBarProps = {
@@ -9,7 +11,9 @@ type FiltersBarProps = {
   onChange: (patch: Partial<VideoFilters>) => void;
   onReset: () => void;
   onExport: () => void;
+  onCopyShareLink: () => void;
   exportDisabled: boolean;
+  shareLabel: string;
   onPresetSelect: (
     preset: "momentum" | "fresh" | "velocity" | "reach",
   ) => void;
@@ -22,7 +26,9 @@ export function FiltersBar({
   onChange,
   onReset,
   onExport,
+  onCopyShareLink,
   exportDisabled,
+  shareLabel,
   onPresetSelect,
 }: FiltersBarProps) {
   const hasActiveFilters =
@@ -30,6 +36,54 @@ export function FiltersBar({
     filters.dateRange !== "30d" ||
     filters.minViews !== 0 ||
     filters.sort !== "momentum";
+  const activeChips: Array<{
+    label: string;
+    onRemove: () => void;
+  }> = [
+    filters.search.trim()
+      ? {
+          label: `Search: ${filters.search.trim()}`,
+          onRemove: () => onChange({ search: "" }),
+        }
+      : null,
+    filters.dateRange !== "30d"
+      ? {
+          label:
+            filters.dateRange === "7d"
+              ? "Last 7 days"
+              : filters.dateRange === "90d"
+                ? "Last 90 days"
+                : "All recent uploads",
+          onRemove: () => onChange({ dateRange: "30d" }),
+        }
+      : null,
+    filters.minViews > 0
+      ? {
+          label: `Min views ${formatCompactNumber(filters.minViews)}`,
+          onRemove: () => onChange({ minViews: 0 }),
+        }
+      : null,
+    filters.sort !== "momentum"
+      ? {
+          label:
+            filters.sort === "views"
+              ? "Sort: Views"
+              : filters.sort === "viewsPerDay"
+                ? "Sort: Views/day"
+                : filters.sort === "recency"
+                  ? "Sort: Recency"
+                  : "Sort: Performance",
+          onRemove: () => onChange({ sort: "momentum" }),
+        }
+      : null,
+  ].filter(
+    (
+      chip,
+    ): chip is {
+      label: string;
+      onRemove: () => void;
+    } => chip !== null,
+  );
 
   return (
     <div className="fade-up panel rounded-[32px] px-6 py-6 sm:px-8 sm:py-7">
@@ -70,6 +124,21 @@ export function FiltersBar({
         ) : null}
       </div>
 
+      {activeChips.length ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {activeChips.map((chip) => (
+            <button
+              key={chip.label}
+              type="button"
+              onClick={chip.onRemove}
+              className="rounded-full border border-black/10 bg-white/70 px-3 py-2 text-xs font-medium text-[var(--ink)] transition hover:border-black/18 hover:bg-white"
+            >
+              {chip.label} ×
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.6fr_0.8fr_0.8fr_0.9fr_auto]">
         <label className="grid gap-2">
           <span className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-black/38">
@@ -77,7 +146,7 @@ export function FiltersBar({
           </span>
           <input
             type="search"
-            placeholder="Find a winning title or theme"
+            placeholder="Find a title, tag, or recurring theme"
             value={filters.search}
             onChange={(event) => onChange({ search: event.target.value })}
             className="h-12 rounded-2xl border border-black/10 bg-white/80 px-4 outline-none transition focus:border-black/22"
@@ -154,12 +223,28 @@ export function FiltersBar({
           </button>
           <button
             type="button"
+            onClick={onCopyShareLink}
+            className="inline-flex h-12 items-center justify-center rounded-full border border-black/10 bg-white/72 px-5 text-sm font-medium text-[var(--ink)] transition hover:border-black/18 hover:bg-white"
+          >
+            {shareLabel}
+          </button>
+          <button
+            type="button"
             onClick={onReset}
             className="inline-flex h-12 items-center justify-center rounded-full border border-black/10 bg-white/72 px-5 text-sm font-medium text-[var(--ink)] transition hover:border-black/18 hover:bg-white"
           >
             Reset
           </button>
         </div>
+      </div>
+
+      <div className="mt-6 flex flex-wrap items-center gap-2 rounded-[24px] border border-black/8 bg-white/56 px-4 py-3">
+        <span className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-black/38">
+          Trend guide
+        </span>
+        <TrendBadge trend="up" lifecycle="Breakout" />
+        <TrendBadge trend="steady" lifecycle="Steady" />
+        <TrendBadge trend="down" lifecycle="Cooling" />
       </div>
     </div>
   );

@@ -38,7 +38,9 @@ export function applyVideoFilters(
 
   const filteredVideos = videos.filter((video) => {
     const matchesSearch =
-      !searchQuery || video.title.toLowerCase().includes(searchQuery);
+      !searchQuery ||
+      video.title.toLowerCase().includes(searchQuery) ||
+      (video.tags ?? []).some((tag) => tag.toLowerCase().includes(searchQuery));
     const matchesViews = video.views >= filters.minViews;
 
     return matchesSearch && matchesViews && matchesDateRange(video, filters.dateRange);
@@ -69,5 +71,8 @@ export function applyVideoFilters(
     return right.performanceScore - left.performanceScore;
   });
 
-  return sortedVideos;
+  return sortedVideos.map((video, index) => ({
+    ...video,
+    rank: index + 1,
+  }));
 }
