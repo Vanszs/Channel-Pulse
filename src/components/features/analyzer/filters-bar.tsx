@@ -10,6 +10,9 @@ type FiltersBarProps = {
   onReset: () => void;
   onExport: () => void;
   exportDisabled: boolean;
+  onPresetSelect: (
+    preset: "momentum" | "fresh" | "velocity" | "reach",
+  ) => void;
 };
 
 export function FiltersBar({
@@ -20,7 +23,14 @@ export function FiltersBar({
   onReset,
   onExport,
   exportDisabled,
+  onPresetSelect,
 }: FiltersBarProps) {
+  const hasActiveFilters =
+    filters.search.trim() !== "" ||
+    filters.dateRange !== "30d" ||
+    filters.minViews !== 0 ||
+    filters.sort !== "momentum";
+
   return (
     <div className="fade-up panel rounded-[32px] px-6 py-6 sm:px-8 sm:py-7">
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -35,6 +45,29 @@ export function FiltersBar({
         <p className="text-sm leading-6 text-[var(--muted)]">
           Showing {visibleCount} of {totalCount} videos after filtering.
         </p>
+      </div>
+
+      <div className="mt-5 flex flex-wrap items-center gap-2">
+        {[
+          { label: "Top momentum", preset: "momentum" as const },
+          { label: "Fresh uploads", preset: "fresh" as const },
+          { label: "Highest views/day", preset: "velocity" as const },
+          { label: "Highest total views", preset: "reach" as const },
+        ].map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            onClick={() => onPresetSelect(preset.preset)}
+            className="rounded-full border border-black/10 bg-white/74 px-3 py-2 text-xs font-medium text-[var(--ink)] transition hover:border-black/18 hover:bg-white"
+          >
+            {preset.label}
+          </button>
+        ))}
+        {hasActiveFilters ? (
+          <span className="ml-auto text-xs font-medium uppercase tracking-[0.2em] text-black/40">
+            Active filters
+          </span>
+        ) : null}
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-[1.6fr_0.8fr_0.8fr_0.9fr_auto]">
@@ -115,7 +148,7 @@ export function FiltersBar({
             type="button"
             onClick={onExport}
             disabled={exportDisabled}
-            className="inline-flex h-12 items-center justify-center rounded-full bg-[var(--ink)] px-5 text-sm font-medium text-white transition hover:bg-black/86 disabled:cursor-not-allowed disabled:bg-black/55"
+            className="inline-flex h-12 items-center justify-center rounded-full border border-[var(--accent)]/18 bg-[linear-gradient(135deg,rgba(255,107,74,0.16),rgba(255,255,255,0.96))] px-5 text-sm font-medium text-[var(--ink)] shadow-[0_10px_24px_rgba(255,107,74,0.1)] transition hover:-translate-y-0.5 hover:border-[var(--accent)]/28 hover:shadow-[0_14px_30px_rgba(255,107,74,0.14)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             Export CSV
           </button>

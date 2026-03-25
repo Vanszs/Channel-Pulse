@@ -70,9 +70,10 @@ export function TrendBadge({ trend, lifecycle }: TrendBadgeProps) {
         "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium",
         lifecycle === "Breakout" &&
           "border-[var(--accent)]/25 bg-[var(--accent-soft)] text-[var(--ink)]",
-        lifecycle === "Steady" && "border-black/8 bg-black/4 text-black/68",
+        lifecycle === "Steady" &&
+          "border-[var(--signal)]/20 bg-[var(--signal-soft)] text-[var(--ink)]",
         lifecycle === "Cooling" &&
-          "border-black/10 bg-black/6 text-black/54",
+          "border-black/10 bg-white/78 text-black/54",
       )}
     >
       <TrendArrow trend={trend} />

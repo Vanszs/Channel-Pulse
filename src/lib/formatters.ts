@@ -34,6 +34,23 @@ export function formatDate(value: string) {
   return dateFormatter.format(new Date(value));
 }
 
+export function formatHostname(value: string) {
+  try {
+    const url = new URL(value);
+    return url.hostname.replace(/^www\./, "");
+  } catch {
+    return value;
+  }
+}
+
+export function truncateText(value: string, maxLength: number) {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
 export function formatPercent(value: number) {
   return percentFormatter.format(value);
 }

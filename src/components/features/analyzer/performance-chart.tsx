@@ -1,10 +1,11 @@
 import { Panel } from "@/components/ui/panel";
 import { TrendBadge } from "@/components/ui/trend-badge";
-import { formatCompactNumber } from "@/lib/formatters";
+import { formatCompactNumber, formatDate, formatRelativeDays } from "@/lib/formatters";
 import type { VideoAnalysis } from "@/types/youtube";
 
 type PerformanceChartProps = {
   videos: VideoAnalysis[];
+  onInspectVideo: (video: VideoAnalysis) => void;
 };
 
 function getBarColor(lifecycle: VideoAnalysis["lifecycle"]) {
@@ -13,45 +14,70 @@ function getBarColor(lifecycle: VideoAnalysis["lifecycle"]) {
   }
 
   if (lifecycle === "Cooling") {
-    return "bg-black/24";
+    return "bg-[rgba(17,17,15,0.22)]";
   }
 
-  return "bg-black/60";
+  return "bg-[rgba(217,119,6,0.72)]";
 }
 
-export function PerformanceChart({ videos }: PerformanceChartProps) {
+export function PerformanceChart({ videos, onInspectVideo }: PerformanceChartProps) {
   const chartVideos = videos.slice(0, 6);
   const maxViewsPerDay = Math.max(...chartVideos.map((video) => video.viewsPerDay), 1);
 
   return (
     <Panel className="fade-up rounded-[32px] px-6 py-6 sm:px-8 sm:py-7">
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-end">
+        <div className="max-w-2xl">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-black/42">
             Velocity chart
           </p>
           <h3 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-[var(--ink)]">
-            Who is moving fastest right now
+            What is accelerating fastest right now
           </h3>
+          <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
+            Daily view velocity across the currently visible set. Use this to spot
+            fast risers, not just the biggest back-catalog titles. Click a row to
+            isolate that upload in the results table.
+          </p>
         </div>
-        <p className="max-w-md text-sm leading-6 text-[var(--muted)]">
-          Views per day for the currently visible videos. This surfaces fast risers,
-          not just the biggest catalog titles.
-        </p>
+
+        <div className="rounded-[24px] border border-black/8 bg-white/60 px-4 py-4">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-black/38">
+            Visible leaders
+          </p>
+          <p className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-[var(--ink)]">
+            {chartVideos.length}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+            The fastest movers in your current view. Each row narrows the main table
+            to one source video.
+          </p>
+        </div>
       </div>
 
-      <div className="mt-8 space-y-5">
+      <div className="mt-6 space-y-3">
         {chartVideos.map((video) => (
-          <div
+          <button
+            type="button"
             key={video.id}
-            className="grid gap-3 border-t border-black/8 pt-5 first:border-t-0 first:pt-0 md:grid-cols-[minmax(0,220px)_1fr_auto]"
+            onClick={() => onInspectVideo(video)}
+            className="grid gap-4 rounded-[26px] border border-black/8 bg-white/58 px-4 py-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-black/16 hover:bg-white/82 md:grid-cols-[74px_minmax(0,1.7fr)_minmax(170px,1fr)_auto_auto] md:items-center"
           >
             <div>
               <p className="mono-data text-xs uppercase tracking-[0.22em] text-black/38">
                 Rank {video.rank}
               </p>
-              <p className="mt-1 text-sm font-medium leading-6 text-[var(--ink)]">
+              <p className="mt-2 text-xs text-[var(--muted)]">
+                {formatRelativeDays(video.ageDays)}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-sm font-medium leading-6 text-[var(--ink)]">
                 {video.title}
+              </p>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Published {formatDate(video.publishedAt)}
               </p>
             </div>
 
@@ -66,13 +92,16 @@ export function PerformanceChart({ videos }: PerformanceChartProps) {
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3 md:justify-end">
-              <span className="mono-data text-sm font-medium text-[var(--ink)]">
+            <div className="flex items-center gap-3">
+              <span className="mono-data text-sm font-medium text-[var(--ink)] md:text-base">
                 {formatCompactNumber(video.viewsPerDay)}/day
               </span>
+            </div>
+
+            <div className="flex items-center justify-start md:justify-end">
               <TrendBadge trend={video.trend} lifecycle={video.lifecycle} />
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </Panel>

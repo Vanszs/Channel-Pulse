@@ -41,7 +41,7 @@ export function ChannelForm({
           <button
             type="submit"
             disabled={isLoading}
-            className="inline-flex h-14 items-center justify-center rounded-full bg-[var(--ink)] px-6 text-sm font-medium text-white transition hover:bg-black/86 disabled:cursor-not-allowed disabled:bg-black/55"
+            className="inline-flex h-14 items-center justify-center rounded-full border border-[var(--accent)]/18 bg-[linear-gradient(135deg,rgba(255,107,74,0.18),rgba(255,255,255,0.96))] px-6 text-sm font-medium text-[var(--ink)] shadow-[0_12px_28px_rgba(255,107,74,0.12)] transition hover:-translate-y-0.5 hover:border-[var(--accent)]/28 hover:shadow-[0_16px_34px_rgba(255,107,74,0.16)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isLoading ? "Analyzing..." : "Analyze Channel"}
           </button>
@@ -63,8 +63,8 @@ export function ChannelForm({
       </div>
 
       <p className="text-sm leading-6 text-[var(--muted)]">
-        Paste a competitor channel handle, custom URL, or channel ID. The data
-        layer now pulls live public data from YouTube Data API v3.
+        Paste a public channel handle, custom URL, or channel ID. We fetch recent
+        public uploads and rank them by momentum, reach, and recency.
       </p>
 
       {error ? (

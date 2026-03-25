@@ -53,7 +53,7 @@ export function InsightsPanel({ analysis }: InsightsPanelProps) {
 
       <div>
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-black/42">
-          Score logic
+          Ranking model
         </p>
         <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
           {analysis.scoreExplanation.formula}
@@ -73,7 +73,7 @@ export function InsightsPanel({ analysis }: InsightsPanelProps) {
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-black/6">
                 <div
-                  className="bar-grow h-full rounded-full bg-[var(--ink)]"
+                  className="bar-grow h-full rounded-full bg-[linear-gradient(90deg,var(--accent),rgba(217,119,6,0.8))]"
                   style={{ width: `${value * 2.8}%` }}
                 />
               </div>

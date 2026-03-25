@@ -4,9 +4,10 @@ import type { ChannelAnalysis } from "@/types/youtube";
 
 type SummaryCardsProps = {
   analysis: ChannelAnalysis;
+  onPresetSelect: (preset: "winners" | "views" | "fresh" | "velocity" | "breakout") => void;
 };
 
-export function SummaryCards({ analysis }: SummaryCardsProps) {
+export function SummaryCards({ analysis, onPresetSelect }: SummaryCardsProps) {
   const { metrics } = analysis;
 
   return (
@@ -16,26 +17,36 @@ export function SummaryCards({ analysis }: SummaryCardsProps) {
         value={`${metrics.monthlyWinners}`}
         detail={`${metrics.monthlyWinners} videos are beating the current channel baseline.`}
         emphasis
+        actionLabel="Open winner set"
+        onClick={() => onPresetSelect("winners")}
       />
       <MetricCard
         label="Monthly views"
         value={formatCompactNumber(metrics.totalRecentViews)}
         detail="Total views from videos published in the last 30 days."
+        actionLabel="Sort by total reach"
+        onClick={() => onPresetSelect("views")}
       />
       <MetricCard
         label="Uploads this month"
         value={`${metrics.videosThisMonth}`}
         detail="Recent uploads included in the month window."
+        actionLabel="Focus on fresh uploads"
+        onClick={() => onPresetSelect("fresh")}
       />
       <MetricCard
         label="Avg views / day"
         value={formatCompactNumber(metrics.averageViewsPerDay)}
         detail="Average daily velocity across the analyzed set."
+        actionLabel="Sort by velocity"
+        onClick={() => onPresetSelect("velocity")}
       />
       <MetricCard
         label="Breakout count"
         value={`${metrics.breakoutCount}`}
         detail={`Median performance score is ${metrics.medianPerformance}/100.`}
+        actionLabel="Open breakout ranking"
+        onClick={() => onPresetSelect("breakout")}
       />
     </div>
   );
