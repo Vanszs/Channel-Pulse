@@ -17,7 +17,7 @@ export type RawVideo = {
   comments?: number;
   durationMinutes: number;
   thumbnailUrl: string;
-  dailyViews: number[];
+  tags?: string[];
 };
 
 export type ChannelProfile = {
@@ -27,8 +27,9 @@ export type ChannelProfile = {
   url: string;
   category: string;
   description: string;
-  subscriberCount: number;
+  subscriberCount: number | null;
   avatarText: string;
+  avatarUrl?: string;
   uploadCadence: string;
   focusTags: string[];
 };

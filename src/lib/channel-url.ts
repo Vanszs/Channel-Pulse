@@ -1,3 +1,9 @@
+export type ChannelIdentifierKind =
+  | "handle"
+  | "channelId"
+  | "username"
+  | "custom";
+
 const SUPPORTED_HOSTS = new Set([
   "youtube.com",
   "www.youtube.com",
@@ -13,11 +19,12 @@ const RESERVED_SEGMENTS = new Set([
   "live",
 ]);
 
-type NormalizedInput =
+export type NormalizedInput =
   | {
       ok: true;
       normalizedUrl: string;
       identifier: string;
+      kind: ChannelIdentifierKind;
     }
   | {
       ok: false;
@@ -68,21 +75,35 @@ export function normalizeYouTubeChannelInput(input: string): NormalizedInput {
 
   let identifier = "";
   let normalizedPath = pathname;
+  let kind: ChannelIdentifierKind = "custom";
 
   if (segments[0].startsWith("@")) {
     identifier = segments[0].slice(1);
     normalizedPath = `/${segments[0]}`;
-  } else if (["channel", "c", "user"].includes(segments[0]) && segments[1]) {
+    kind = "handle";
+  } else if (segments[0] === "channel" && segments[1]) {
     identifier = segments[1];
-    normalizedPath = `/${segments[0]}/${segments[1]}`;
+    normalizedPath = `/channel/${segments[1]}`;
+    kind = "channelId";
+  } else if (segments[0] === "user" && segments[1]) {
+    identifier = segments[1];
+    normalizedPath = `/user/${segments[1]}`;
+    kind = "username";
+  } else if (segments[0] === "c" && segments[1]) {
+    identifier = segments[1];
+    normalizedPath = `/c/${segments[1]}`;
+    kind = "custom";
   } else {
     identifier = segments[0];
     normalizedPath = `/${segments[0]}`;
+    kind = "custom";
   }
 
-  const cleanedIdentifier = identifier.replace(/[^\w.-]+/g, "").toLowerCase();
+  const cleanedIdentifier = identifier.replace(/[^\w.-]+/g, "");
+  const normalizedIdentifier =
+    kind === "channelId" ? cleanedIdentifier : cleanedIdentifier.toLowerCase();
 
-  if (!cleanedIdentifier) {
+  if (!normalizedIdentifier) {
     return {
       ok: false,
       error: "That URL does not look like a supported channel format.",
@@ -91,7 +112,8 @@ export function normalizeYouTubeChannelInput(input: string): NormalizedInput {
 
   return {
     ok: true,
-    identifier: cleanedIdentifier,
+    identifier: normalizedIdentifier,
+    kind,
     normalizedUrl: `https://www.youtube.com${normalizedPath}`,
   };
 }

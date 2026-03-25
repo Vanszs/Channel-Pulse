@@ -11,13 +11,13 @@ Paste a channel URL and the app returns a clean performance dashboard with:
 - breakout, steady, and cooling labels
 - CSV export and share-ready insight copy
 
-The current build uses a backend-ready mock analysis service behind a real Next.js API route, so the frontend can later swap to a live YouTube data source without rewriting the UI layer.
+The current build uses the real YouTube Data API v3 behind a thin Next.js API route, then computes momentum and performance signals from live public channel data.
 
 ## Features
 
 - YouTube channel URL input with validation
 - loading, empty, success, and error states
-- channel overview with category, cadence, and focus tags
+- live channel overview with category, cadence, and focus tags
 - KPI summary cards for this month, velocity, breakouts, and score consistency
 - momentum chart using views/day
 - sortable and filterable video list
@@ -31,6 +31,7 @@ The current build uses a backend-ready mock analysis service behind a real Next.
 - React 19
 - Tailwind CSS 4
 - TypeScript
+- YouTube Data API v3
 
 No external UI kit, charting library, or state library was added.
 
@@ -40,8 +41,17 @@ Requirements: Node.js 20+ and npm.
 
 ```bash
 npm install
+cp .env.example .env.local
 npm run dev
 ```
+
+Then add your YouTube API key to `.env.local`:
+
+```env
+YOUTUBE_API_KEY=your_youtube_data_api_v3_key
+```
+
+If you already created `env.local`, the server will also read that in local development, but `.env.local` is the standard Next.js setup.
 
 Open `http://localhost:3000`.
 
@@ -83,7 +93,8 @@ src/
 │   ├── scoring.ts                # performance and momentum scoring
 │   └── video-filters.ts          # client-side sorting and filtering
 ├── services/
-│   └── channel-analysis.ts       # backend-ready mock data generation + insights
+│   ├── channel-analysis.ts       # analysis assembly + insight generation
+│   └── youtube-api.ts            # YouTube Data API ingestion + channel resolution
 └── types/
     └── youtube.ts                # shared request/response and domain types
 ```
@@ -93,22 +104,23 @@ src/
 1. The client form validates the pasted YouTube channel URL.
 2. The app posts to `POST /api/analyze`.
 3. The route validates input again and calls the analysis service.
-4. The service normalizes the channel, generates realistic mock uploads, scores each video, and returns typed analysis data.
+4. The service resolves the channel ID, fetches the uploads playlist and video stats from YouTube Data API v3, scores each video, and returns typed analysis data.
 5. The client renders summary cards, insights, the chart, filters, and the video list from the same typed response.
 
 ## Scoring Logic
 
 The performance score is intentionally simple in the UI:
 
-`30% views reach + 25% views/day + 18% engagement proxy + 17% acceleration + 10% recency`
+`30% views reach + 25% views/day + 18% engagement proxy + 17% velocity proxy + 10% recency`
 
-The app also exposes a separate momentum score that leans more heavily on acceleration, views/day, and recency so fast climbers surface before they become the obvious winners.
+The app also exposes a separate momentum score that leans more heavily on the velocity proxy, views/day, and recency so fast climbers surface before they become the obvious winners.
 
 This means the product rewards videos that are actively moving, not just older uploads with large lifetime totals.
 
+Because the YouTube API does not provide historical daily view curves for arbitrary competitor channels, the "velocity proxy" compares a video's views/day against the channel's recent median as a live momentum signal.
+
 ## Future Improvements
 
-- replace the mock service with real YouTube Data API ingestion
 - persist channel scans and shareable URLs
 - add historical trend charts with daily snapshots
 - support benchmarking across multiple competitors
@@ -119,7 +131,7 @@ This means the product rewards videos that are actively moving, not just older u
 1. `init next app with tailwind and typed app router`
 2. `set up swiss-inspired layout, fonts, and global surface styles`
 3. `add channel URL validation and analyze API route`
-4. `build mock analysis service and shared youtube domain types`
+4. `wire youtube data api service and shared youtube domain types`
 5. `implement scoring, filtering, sorting, and csv export utilities`
 6. `compose analyzer shell with loading, empty, and error states`
 7. `add channel summary, kpis, chart, insights, and responsive video list`
@@ -132,11 +144,11 @@ This means the product rewards videos that are actively moving, not just older u
 - Used the App Router with a thin API route so the frontend is already aligned with a real backend boundary.
 - Kept all domain contracts in `src/types/youtube.ts` so UI and service logic share the same typed model.
 - Built the chart in Tailwind and plain CSS to respect the dependency constraint.
-- Chose deterministic mock generation from the channel identifier so different URLs still feel intentional and demo-ready.
+- Resolved handles, usernames, direct channel IDs, and custom channel URLs server-side so the input stays product-friendly.
 
 ### Tradeoffs
 
-- The data is mock-generated rather than fetched from YouTube.
+- The YouTube API gives us live public snapshot data, but not historical per-day view curves for arbitrary channels.
 - The chart is lightweight and deliberately not a full analytics suite.
 - There is no persistence, auth, or scan history yet.
 
@@ -154,4 +166,4 @@ This means the product rewards videos that are actively moving, not just older u
 - External input is validated at both the client form boundary and the API route boundary.
 - The API route stays thin while the service owns non-trivial business logic.
 - Shared contracts keep the request/response flow typed end-to-end.
-- Business logic for scoring and filtering lives outside the UI so the mock layer is replaceable later.
+- Business logic for YouTube ingestion, scoring, and filtering lives outside the UI so persistence or historical snapshots can be added later.

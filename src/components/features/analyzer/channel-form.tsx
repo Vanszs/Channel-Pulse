@@ -64,7 +64,7 @@ export function ChannelForm({
 
       <p className="text-sm leading-6 text-[var(--muted)]">
         Paste a competitor channel handle, custom URL, or channel ID. The data
-        layer is mock-backed but structured like a real analysis API.
+        layer now pulls live public data from YouTube Data API v3.
       </p>
 
       {error ? (

@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { normalizeYouTubeChannelInput } from "@/lib/channel-url";
-import { analyzeChannel } from "@/services/channel-analysis";
+import {
+  analyzeChannel,
+  type ChannelAnalysisError,
+} from "@/services/channel-analysis";
 import type {
   AnalyzeChannelRequest,
   AnalyzeChannelResponse,
@@ -41,7 +44,26 @@ export async function POST(request: Request) {
       ok: true,
       data: analysis,
     });
-  } catch {
+  } catch (caughtError) {
+    if (
+      caughtError &&
+      typeof caughtError === "object" &&
+      "message" in caughtError &&
+      "field" in caughtError &&
+      "status" in caughtError
+    ) {
+      const error = caughtError as ChannelAnalysisError;
+
+      return NextResponse.json<AnalyzeChannelResponse>(
+        {
+          ok: false,
+          error: error.message,
+          field: error.field,
+        },
+        { status: error.status },
+      );
+    }
+
     return NextResponse.json<AnalyzeChannelResponse>(
       {
         ok: false,

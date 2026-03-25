@@ -12,7 +12,7 @@ type DerivedVideoMetrics = {
   ageDays: number;
   viewsPerDay: number;
   engagementRate: number;
-  acceleration: number;
+  accelerationProxy: number;
   recencyScore: number;
 };
 
@@ -55,9 +55,6 @@ function deriveMetrics(video: RawVideo, referenceDate: Date): DerivedVideoMetric
   const likes = video.likes ?? 0;
   const comments = video.comments ?? 0;
   const engagementRate = (likes + comments * 4) / Math.max(video.views, 1);
-  const headAverage = average(video.dailyViews.slice(0, 4));
-  const tailAverage = average(video.dailyViews.slice(-3));
-  const acceleration = (tailAverage - headAverage) / Math.max(headAverage, 1);
   const recencyScore = clamp(1 - (ageDays - 1) / 90, 0.22, 1);
 
   return {
@@ -65,17 +62,17 @@ function deriveMetrics(video: RawVideo, referenceDate: Date): DerivedVideoMetric
     ageDays,
     viewsPerDay,
     engagementRate,
-    acceleration,
+    accelerationProxy: 0,
     recencyScore,
   };
 }
 
-function toTrendDirection(acceleration: number): TrendDirection {
-  if (acceleration > 0.12) {
+function toTrendDirection(accelerationProxy: number): TrendDirection {
+  if (accelerationProxy > 0.3) {
     return "up";
   }
 
-  if (acceleration < -0.08) {
+  if (accelerationProxy < -0.18) {
     return "down";
   }
 
@@ -85,7 +82,7 @@ function toTrendDirection(acceleration: number): TrendDirection {
 function toLifecycleLabel(
   performanceScore: number,
   momentumScore: number,
-  acceleration: number,
+  accelerationProxy: number,
   ageDays: number,
   viewsPerDay: number,
   maxViewsPerDay: number,
@@ -93,14 +90,14 @@ function toLifecycleLabel(
   if (
     performanceScore >= 80 ||
     momentumScore >= 78 ||
-    (acceleration > 0.18 && ageDays <= 30)
+    (accelerationProxy > 0.35 && ageDays <= 30)
   ) {
     return "Breakout";
   }
 
   if (
     momentumScore < 48 ||
-    acceleration < -0.1 ||
+    accelerationProxy < -0.22 ||
     (ageDays > 45 && viewsPerDay < maxViewsPerDay * 0.38)
   ) {
     return "Cooling";
@@ -110,6 +107,10 @@ function toLifecycleLabel(
 }
 
 export function buildVideoAnalysis(rawVideos: RawVideo[]) {
+  if (!rawVideos.length) {
+    return [];
+  }
+
   const referenceDate = new Date();
   const derivedVideos = rawVideos.map((video) => deriveMetrics(video, referenceDate));
   const maxViews = Math.max(...derivedVideos.map((video) => video.raw.views), 1);
@@ -121,17 +122,29 @@ export function buildVideoAnalysis(rawVideos: RawVideo[]) {
     ...derivedVideos.map((video) => video.engagementRate),
     0.01,
   );
+  const medianViewsPerDay = Math.max(
+    1,
+    median(derivedVideos.map((video) => video.viewsPerDay)),
+  );
+  const withAcceleration = derivedVideos.map((video) => ({
+    ...video,
+    accelerationProxy: clamp(
+      video.viewsPerDay / medianViewsPerDay - 1,
+      -0.85,
+      2.6,
+    ),
+  }));
   const accelerationSpan = Math.max(
-    ...derivedVideos.map((video) => Math.abs(video.acceleration)),
-    0.15,
+    ...withAcceleration.map((video) => Math.abs(video.accelerationProxy)),
+    0.35,
   );
 
-  const scoredVideos: Omit<VideoAnalysis, "rank">[] = derivedVideos.map((video) => {
+  const scoredVideos: Omit<VideoAnalysis, "rank">[] = withAcceleration.map((video) => {
     const viewReach = video.raw.views / maxViews;
     const velocity = video.viewsPerDay / maxViewsPerDay;
     const engagement = video.engagementRate / maxEngagement;
     const normalizedAcceleration =
-      (video.acceleration + accelerationSpan) / (accelerationSpan * 2);
+      (video.accelerationProxy + accelerationSpan) / (accelerationSpan * 2);
 
     const performanceScore = Math.round(
       (viewReach * 0.3 +
@@ -154,14 +167,14 @@ export function buildVideoAnalysis(rawVideos: RawVideo[]) {
       ageDays: video.ageDays,
       viewsPerDay: Math.round(video.viewsPerDay),
       engagementRate: video.engagementRate,
-      acceleration: video.acceleration,
+      acceleration: Number(video.accelerationProxy.toFixed(3)),
       performanceScore,
       momentumScore,
-      trend: toTrendDirection(video.acceleration),
+      trend: toTrendDirection(video.accelerationProxy),
       lifecycle: toLifecycleLabel(
         performanceScore,
         momentumScore,
-        video.acceleration,
+        video.accelerationProxy,
         video.ageDays,
         video.viewsPerDay,
         maxViewsPerDay,

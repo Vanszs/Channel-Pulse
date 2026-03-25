@@ -18,9 +18,9 @@ import { applyVideoFilters, defaultVideoFilters, type VideoFilters } from "@/lib
 import type { AnalyzeChannelResponse, ChannelAnalysis } from "@/types/youtube";
 
 const sampleChannels = [
-  "https://www.youtube.com/@growthbriefing",
-  "https://www.youtube.com/@stacksignal",
-  "https://www.youtube.com/@designledger",
+  "https://www.youtube.com/@GoogleDevelopers",
+  "https://www.youtube.com/@Webflow",
+  "https://www.youtube.com/@GoogleCloudTech",
 ];
 
 type ViewState = "idle" | "loading" | "success" | "error";
@@ -139,7 +139,10 @@ export function AnalyzerShell() {
     }
 
     const csv = buildVideosCsv(visibleVideos);
-    const filename = `${analysis.channel.handle.replace("@", "")}-winners.csv`;
+    const filename = `${analysis.channel.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")}-winners.csv`;
 
     downloadCsv(filename, csv);
   }
@@ -164,7 +167,7 @@ export function AnalyzerShell() {
               Tailwind only
             </span>
             <span className="rounded-full border border-black/8 px-3 py-1.5">
-              API-ready mock layer
+              Real YouTube data
             </span>
           </div>
         </header>
@@ -197,7 +200,7 @@ export function AnalyzerShell() {
                   Momentum
                 </p>
                 <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-                  Rank by acceleration, recency, and engagement proxy to catch lift early.
+                  Rank by velocity, recency, and an outperformance proxy to catch lift early.
                 </p>
               </div>
               <div className="rounded-[24px] border border-black/8 bg-white/60 p-4">
@@ -242,7 +245,7 @@ export function AnalyzerShell() {
                 Performance score
               </p>
               <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-                Reach, views/day, engagement proxy, acceleration, and recency are
+                Reach, views/day, engagement proxy, a velocity proxy, and recency are
                 blended into a single signal so you can answer, quickly, which uploads
                 deserve attention right now.
               </p>
@@ -250,7 +253,7 @@ export function AnalyzerShell() {
                 {[
                   "Views reach",
                   "Views / day",
-                  "Acceleration",
+                  "Velocity proxy",
                   "Engagement proxy",
                   "Recency",
                 ].map((item) => (
@@ -311,9 +314,9 @@ export function AnalyzerShell() {
                 Clean boundaries now, real API later.
               </h2>
               <p className="mt-4 text-sm leading-7 text-[var(--muted)]">
-                The app separates the route handler, analysis service, scoring logic,
-                filter utilities, and UI components so the mock data layer can be
-                replaced without rewriting the frontend.
+                The app separates the route handler, YouTube ingestion service,
+                scoring logic, filter utilities, and UI components so we can add
+                persistence or historical snapshots without rewriting the frontend.
               </p>
             </Panel>
           </section>

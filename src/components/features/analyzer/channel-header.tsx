@@ -17,9 +17,17 @@ export function ChannelHeader({
     <Panel className="fade-up rounded-[32px] px-6 py-6 sm:px-8 sm:py-7">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div className="flex min-w-0 gap-4">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[22px] bg-[var(--accent-soft)] text-lg font-semibold text-[var(--ink)]">
-            {analysis.channel.avatarText}
-          </div>
+          {analysis.channel.avatarUrl ? (
+            <img
+              src={analysis.channel.avatarUrl}
+              alt={`${analysis.channel.name} avatar`}
+              className="h-16 w-16 shrink-0 rounded-[22px] object-cover"
+            />
+          ) : (
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[22px] bg-[var(--accent-soft)] text-lg font-semibold text-[var(--ink)]">
+              {analysis.channel.avatarText}
+            </div>
+          )}
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-black/42">
@@ -62,7 +70,9 @@ export function ChannelHeader({
                 Subscribers
               </span>
               <span className="mt-1 block text-base font-medium text-[var(--ink)]">
-                {formatCompactNumber(analysis.channel.subscriberCount)}
+                {analysis.channel.subscriberCount === null
+                  ? "Hidden"
+                  : formatCompactNumber(analysis.channel.subscriberCount)}
               </span>
             </p>
             <p>

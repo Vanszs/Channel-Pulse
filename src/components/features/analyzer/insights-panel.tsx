@@ -10,7 +10,7 @@ const weightLabels: Record<keyof ScoreVector, string> = {
   viewReach: "View reach",
   velocity: "Views / day",
   engagement: "Engagement proxy",
-  acceleration: "Acceleration",
+  acceleration: "Velocity proxy",
   recency: "Recency",
 };
 
