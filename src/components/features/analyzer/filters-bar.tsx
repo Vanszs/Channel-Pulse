@@ -17,6 +17,7 @@ type FiltersBarProps = {
   onPresetSelect: (
     preset: "momentum" | "fresh" | "velocity" | "reach",
   ) => void;
+  activePreset: "momentum" | "fresh" | "velocity" | "reach" | null;
 };
 
 export function FiltersBar({
@@ -30,6 +31,7 @@ export function FiltersBar({
   exportDisabled,
   shareLabel,
   onPresetSelect,
+  activePreset,
 }: FiltersBarProps) {
   const hasActiveFilters =
     filters.search.trim() !== "" ||
@@ -37,6 +39,7 @@ export function FiltersBar({
     filters.minViews !== 0 ||
     filters.sort !== "momentum" ||
     filters.segment !== "all";
+
   const activeChips: Array<{
     label: string;
     onRemove: () => void;
@@ -58,6 +61,12 @@ export function FiltersBar({
           onRemove: () => onChange({ dateRange: "30d" }),
         }
       : null,
+    filters.segment !== "all"
+      ? {
+          label: filters.segment === "winners" ? "Winner set" : "Breakout only",
+          onRemove: () => onChange({ segment: "all" }),
+        }
+      : null,
     filters.minViews > 0
       ? {
           label: `Min views ${formatCompactNumber(filters.minViews)}`,
@@ -77,12 +86,6 @@ export function FiltersBar({
           onRemove: () => onChange({ sort: "momentum" }),
         }
       : null,
-    filters.segment !== "all"
-      ? {
-          label: filters.segment === "winners" ? "Winner set" : "Breakout only",
-          onRemove: () => onChange({ segment: "all" }),
-        }
-      : null,
   ].filter(
     (
       chip,
@@ -100,7 +103,7 @@ export function FiltersBar({
             Sort and filter
           </p>
           <h3 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-[var(--ink)]">
-            Trim the list to what matters now
+            Shape the result set before you scan details
           </h3>
         </div>
         <p className="text-sm leading-6 text-[var(--muted)]">
@@ -119,7 +122,11 @@ export function FiltersBar({
             key={preset.label}
             type="button"
             onClick={() => onPresetSelect(preset.preset)}
-            className="rounded-full border border-black/10 bg-white/74 px-3 py-2 text-xs font-medium text-[var(--ink)] transition hover:border-black/18 hover:bg-white"
+            className={`rounded-full border px-3 py-2 text-xs font-medium transition ${
+              activePreset === preset.preset
+                ? "border-[var(--accent)]/22 bg-[var(--accent-soft)] text-[var(--ink)]"
+                : "border-black/10 bg-white/74 text-[var(--ink)] hover:border-black/18 hover:bg-white"
+            }`}
           >
             {preset.label}
           </button>
@@ -131,22 +138,7 @@ export function FiltersBar({
         ) : null}
       </div>
 
-      {activeChips.length ? (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {activeChips.map((chip) => (
-            <button
-              key={chip.label}
-              type="button"
-              onClick={chip.onRemove}
-              className="rounded-full border border-black/10 bg-white/70 px-3 py-2 text-xs font-medium text-[var(--ink)] transition hover:border-black/18 hover:bg-white"
-            >
-              {chip.label} ×
-            </button>
-          ))}
-        </div>
-      ) : null}
-
-      <div className="mt-6 grid gap-4 lg:grid-cols-[1.6fr_0.8fr_0.8fr_0.9fr_auto]">
+      <div className="mt-6 grid gap-4 xl:grid-cols-[1.55fr_0.85fr_0.95fr_0.85fr_0.95fr]">
         <label className="grid gap-2">
           <span className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-black/38">
             Search titles or tags
@@ -177,6 +169,25 @@ export function FiltersBar({
             <option value="30d">Last 30 days</option>
             <option value="90d">Last 90 days</option>
             <option value="all">All recent uploads</option>
+          </select>
+        </label>
+
+        <label className="grid gap-2">
+          <span className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-black/38">
+            Segment
+          </span>
+          <select
+            value={filters.segment}
+            onChange={(event) =>
+              onChange({
+                segment: event.target.value as VideoFilters["segment"],
+              })
+            }
+            className="h-12 rounded-2xl border border-black/10 bg-white/80 px-4 outline-none transition focus:border-black/22"
+          >
+            <option value="all">All ranked uploads</option>
+            <option value="winners">Winner set only</option>
+            <option value="breakout">Breakout only</option>
           </select>
         </label>
 
@@ -218,8 +229,29 @@ export function FiltersBar({
             <option value="recency">Recency</option>
           </select>
         </label>
+      </div>
 
-        <div className="flex items-end gap-3">
+      <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-wrap gap-2">
+          {activeChips.length ? (
+            activeChips.map((chip) => (
+              <button
+                key={chip.label}
+                type="button"
+                onClick={chip.onRemove}
+                className="rounded-full border border-black/10 bg-white/70 px-3 py-2 text-xs font-medium text-[var(--ink)] transition hover:border-black/18 hover:bg-white"
+              >
+                {chip.label} ×
+              </button>
+            ))
+          ) : (
+            <p className="text-sm text-[var(--muted)]">
+              Use presets, explicit filters, or KPI cards to reshape the visible set.
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={onExport}
@@ -240,7 +272,7 @@ export function FiltersBar({
             onClick={onReset}
             className="inline-flex h-12 items-center justify-center rounded-full border border-black/10 bg-white/72 px-5 text-sm font-medium text-[var(--ink)] transition hover:border-black/18 hover:bg-white"
           >
-            Reset
+            Reset filters
           </button>
         </div>
       </div>

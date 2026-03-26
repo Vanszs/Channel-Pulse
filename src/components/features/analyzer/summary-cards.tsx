@@ -5,9 +5,14 @@ import type { ChannelAnalysis } from "@/types/youtube";
 type SummaryCardsProps = {
   analysis: ChannelAnalysis;
   onPresetSelect: (preset: "winners" | "views" | "fresh" | "velocity" | "breakout") => void;
+  activePreset: "winners" | "views" | "fresh" | "velocity" | "breakout" | null;
 };
 
-export function SummaryCards({ analysis, onPresetSelect }: SummaryCardsProps) {
+export function SummaryCards({
+  analysis,
+  onPresetSelect,
+  activePreset,
+}: SummaryCardsProps) {
   const { metrics } = analysis;
 
   return (
@@ -18,6 +23,7 @@ export function SummaryCards({ analysis, onPresetSelect }: SummaryCardsProps) {
         detail={`${metrics.monthlyWinners} videos are beating the current channel baseline.`}
         emphasis
         actionLabel="Open winner set"
+        active={activePreset === "winners"}
         onClick={() => onPresetSelect("winners")}
       />
       <MetricCard
@@ -25,6 +31,7 @@ export function SummaryCards({ analysis, onPresetSelect }: SummaryCardsProps) {
         value={formatCompactNumber(metrics.totalRecentViews)}
         detail="Total views from videos published in the last 30 days."
         actionLabel="Sort by total reach"
+        active={activePreset === "views"}
         onClick={() => onPresetSelect("views")}
       />
       <MetricCard
@@ -32,6 +39,7 @@ export function SummaryCards({ analysis, onPresetSelect }: SummaryCardsProps) {
         value={`${metrics.videosThisMonth}`}
         detail="Recent uploads included in the month window."
         actionLabel="Focus on fresh uploads"
+        active={activePreset === "fresh"}
         onClick={() => onPresetSelect("fresh")}
       />
       <MetricCard
@@ -39,6 +47,7 @@ export function SummaryCards({ analysis, onPresetSelect }: SummaryCardsProps) {
         value={formatCompactNumber(metrics.averageViewsPerDay)}
         detail="Average daily velocity across the analyzed set."
         actionLabel="Sort by velocity"
+        active={activePreset === "velocity"}
         onClick={() => onPresetSelect("velocity")}
       />
       <MetricCard
@@ -46,6 +55,7 @@ export function SummaryCards({ analysis, onPresetSelect }: SummaryCardsProps) {
         value={`${metrics.breakoutCount}`}
         detail="Uploads in the current month window that are still accelerating above baseline."
         actionLabel="Show breakout only"
+        active={activePreset === "breakout"}
         onClick={() => onPresetSelect("breakout")}
       />
     </div>

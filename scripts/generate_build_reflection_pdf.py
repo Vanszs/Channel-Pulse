@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = ROOT / "output" / "pdf"
 TMP_DIR = ROOT / "tmp" / "pdfs"
 OUTPUT_PATH = OUTPUT_DIR / "channel-pulse-build-reflection.pdf"
+PREVIEW_URL = "https://vibe-coder-quest-mgt8iarrf-vanszs-projects.vercel.app"
 
 
 def build_styles():
@@ -241,9 +242,6 @@ def draw_page(canvas, doc):
     canvas.setFillColor(colors.HexColor("#FFFDFC"))
     canvas.roundRect(16 * mm, 14 * mm, width - 32 * mm, height - 28 * mm, 18, stroke=0, fill=1)
 
-    canvas.setFillColor(colors.HexColor("#FFE3D8"))
-    canvas.roundRect(16 * mm, height - 36 * mm, width - 32 * mm, 14 * mm, 18, stroke=0, fill=1)
-
     canvas.setFont("Helvetica-Bold", 8.5)
     canvas.setFillColor(colors.HexColor("#7A6E62"))
     canvas.drawString(22 * mm, height - 28 * mm, "CHANNEL PULSE - BUILD REFLECTION")
@@ -269,17 +267,21 @@ def build_story(styles):
             callout_box(
                 styles,
                 "Submission context",
-                "This build was completed in roughly 2 hours end-to-end, with a little extra "
-                "effort because I worked in Codex Free rather than a heavier fully managed "
-                "agent workflow. The goal was to ship a clean MVP fast, then tighten the "
-                "semantic and UX quality until the product felt trustworthy.",
+                f"This build took roughly 3-4 hours end-to-end because I worked at a more "
+                f"relaxed pace while still iterating carefully on the product, deployment, "
+                f"and security details. The goal was to ship a clean MVP first, then tighten "
+                f"semantic quality, trust signals, and production readiness until the product "
+                f"felt credible. The latest preview deployment can be opened here: "
+                f"<font color='#C95A3A'><u><link href='{PREVIEW_URL}'>Open the live Vercel preview</link></u></font>."
+                f"<br/>Preview URL: <font color='#C95A3A'><u><link href='{PREVIEW_URL}'>"
+                f"vibe-coder-quest-mgt8iarrf-vanszs-projects.vercel.app</link></u></font>.",
             ),
             Spacer(1, 10),
             Table(
                 [
                     [
-                        metric_card(styles, "Build Time", "~2 hours", "Design, architecture, implementation, live API integration, UX audit, and polish."),
-                        metric_card(styles, "Core Stack", "Next.js + Tailwind", "Next.js 16, React 19, TypeScript 5, Tailwind CSS 4, and YouTube Data API v3."),
+                        metric_card(styles, "Build Time", "~3-4 hours", "Design, architecture, implementation, deployment setup, security hardening, live API integration, UX audit, and polish."),
+                        metric_card(styles, "Core Stack", "Next.js + Tailwind", "Next.js 16, React 19, TypeScript 5, Tailwind CSS 4, YouTube Data API v3, and Vercel preview deployment."),
                         metric_card(styles, "Primary Workflow", "Codex + skills", "Skill-guided implementation with prompt iteration, rapid refactors, and live verification."),
                     ]
                 ],
@@ -301,7 +303,7 @@ def build_story(styles):
                     "<b>What I automated</b>: prompt iteration, project structure decisions, UI scaffolding, API route work, mock-to-live data replacement, scoring and filtering logic, chart and table implementation, pagination, export flow, and most of the refactor work from start to finish.",
                     "<b>What I accelerated</b>: repetitive code generation, architecture cleanup, component splitting, API wiring, and semantic fixes after auditing the first pass.",
                     "<b>What I simplified</b>: I kept the product single-user and stateless, used YouTube public data rather than a stored database layer, and focused the UI on one clear flow instead of overbuilding auth, billing, persistence, and multi-workspace features too early.",
-                    "<b>What stayed manual</b>: UI and UX review, product judgment, visual consistency checks, deciding what felt odd or misleading, environment setup for the API key, and the final audit to move the app from demo-ish to more trustworthy.",
+                    "<b>What stayed manual</b>: UI and UX review, product judgment, visual consistency checks, deciding what felt odd or misleading, deployment setup, environment handling for the API key, and the final audit to move the app from demo-ish to more trustworthy.",
                 ],
             ),
             Spacer(1, 8),
@@ -311,6 +313,24 @@ def build_story(styles):
                 "The fastest loop was: improve prompt -> use the right skill -> generate structure "
                 "and code -> swap mocks for live API data -> test locally -> audit semantics -> "
                 "tighten UX copy and interactions. That kept momentum high without losing control of the product quality.",
+            ),
+            Spacer(1, 10),
+            Paragraph("Security Additions", styles["SectionTitle"]),
+            Paragraph(
+                "Besides building the MVP features, I also added a small but meaningful security baseline "
+                "so the public demo is safer to expose and less likely to be abused. This was a separate "
+                "part of the work, not just a side effect of building the UI.",
+                styles["SectionBody"],
+            ),
+            bullet_list(
+                styles,
+                [
+                    "<b>Server-side secret handling</b>: the YouTube API key stays in environment variables and is not committed to GitHub, so the browser never receives the raw secret.",
+                    "<b>Request hardening on the API route</b>: the analyze endpoint only accepts JSON, checks same-origin requests, and requires a custom intent header before processing.",
+                    "<b>Input and payload validation</b>: the server rejects malformed YouTube URLs, caps request body size, blocks invalid JSON, and returns structured errors instead of blindly trusting client input.",
+                    "<b>Abuse protection</b>: I added per-client rate limiting on the analyze route so repeated automated requests are throttled instead of hitting the service endlessly.",
+                    "<b>Safer response behavior</b>: no-store headers prevent analysis responses from being cached carelessly, and app-wide headers like CSP, HSTS, X-Frame-Options, nosniff, COOP, and Permissions-Policy give the deployment a stronger browser security posture.",
+                ],
             ),
         ]
     )

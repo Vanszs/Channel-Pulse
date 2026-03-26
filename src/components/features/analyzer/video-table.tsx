@@ -126,7 +126,8 @@ export function VideoTable({
                       {video.title}
                     </a>
                     <p className="mt-1 text-xs text-[var(--muted)]">
-                      {formatDate(video.publishedAt)} · {formatRelativeDays(video.ageDays)}
+                      {formatDate(video.publishedAt)} · {formatRelativeDays(video.ageDays)} ·{" "}
+                      {video.durationMinutes}m runtime
                     </p>
                   </div>
                 </div>
@@ -164,23 +165,12 @@ export function VideoTable({
                       {video.momentumScore}/100
                     </p>
                   </div>
-                  <div>
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-black/38">
-                      Likes
-                    </p>
-                    <p className="mt-1 font-medium text-[var(--ink)]">
-                      {formatEngagement(video.likes)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-black/38">
-                      Comments
-                    </p>
-                    <p className="mt-1 font-medium text-[var(--ink)]">
-                      {formatEngagement(video.comments)}
-                    </p>
-                  </div>
                 </div>
+
+                <p className="mt-3 text-xs leading-6 text-[var(--muted)]">
+                  Engagement: {formatEngagement(video.likes)} likes ·{" "}
+                  {formatEngagement(video.comments)} comments
+                </p>
 
                 <div className="mt-4 flex flex-wrap items-center gap-2">
                   <a

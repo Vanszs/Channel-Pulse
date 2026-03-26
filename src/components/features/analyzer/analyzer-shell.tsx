@@ -45,6 +45,8 @@ const sampleChannels = [
 ];
 
 type ViewState = "idle" | "loading" | "success" | "error";
+type SummaryPreset = "winners" | "views" | "fresh" | "velocity" | "breakout";
+type QuickPreset = "momentum" | "fresh" | "velocity" | "reach";
 
 function scrollToSection(id: string) {
   document.getElementById(id)?.scrollIntoView({
@@ -98,6 +100,82 @@ function getSegmentLabel(segment: VideoFilters["segment"]) {
   return "filtered set";
 }
 
+function isBasePresetState(filters: VideoFilters) {
+  return filters.search.trim() === "" && filters.minViews === 0;
+}
+
+function getActiveSummaryPreset(filters: VideoFilters): SummaryPreset | null {
+  if (!isBasePresetState(filters)) {
+    return null;
+  }
+
+  if (
+    filters.segment === "winners" &&
+    filters.dateRange === "30d" &&
+    filters.sort === "momentum"
+  ) {
+    return "winners";
+  }
+
+  if (
+    filters.segment === "breakout" &&
+    filters.dateRange === "30d" &&
+    filters.sort === "viewsPerDay"
+  ) {
+    return "breakout";
+  }
+
+  if (
+    filters.segment === "all" &&
+    filters.dateRange === "30d" &&
+    filters.sort === "views"
+  ) {
+    return "views";
+  }
+
+  if (
+    filters.segment === "all" &&
+    filters.dateRange === "7d" &&
+    filters.sort === "recency"
+  ) {
+    return "fresh";
+  }
+
+  if (
+    filters.segment === "all" &&
+    filters.dateRange === "30d" &&
+    filters.sort === "viewsPerDay"
+  ) {
+    return "velocity";
+  }
+
+  return null;
+}
+
+function getActiveQuickPreset(filters: VideoFilters): QuickPreset | null {
+  if (!isBasePresetState(filters) || filters.segment !== "all") {
+    return null;
+  }
+
+  if (filters.dateRange === "30d" && filters.sort === "momentum") {
+    return "momentum";
+  }
+
+  if (filters.dateRange === "7d" && filters.sort === "recency") {
+    return "fresh";
+  }
+
+  if (filters.dateRange === "30d" && filters.sort === "viewsPerDay") {
+    return "velocity";
+  }
+
+  if (filters.dateRange === "30d" && filters.sort === "views") {
+    return "reach";
+  }
+
+  return null;
+}
+
 export function AnalyzerShell() {
   const [channelUrl, setChannelUrl] = useState("");
   const [activeChannelUrl, setActiveChannelUrl] = useState("");
@@ -143,6 +221,8 @@ export function AnalyzerShell() {
     : [];
   const paginatedResults = paginateItems(visibleVideos, pagination);
   const pageVideos = paginatedResults.items;
+  const activeSummaryPreset = getActiveSummaryPreset(filters);
+  const activeQuickPreset = getActiveQuickPreset(filters);
 
   function updateFilters(patch: Partial<VideoFilters>) {
     setFilters((currentFilters) => ({
@@ -423,7 +503,7 @@ export function AnalyzerShell() {
     <div className="app-shell">
       <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
         <header className="fade-up rounded-[30px] border border-black/8 bg-white/46 px-5 py-4 backdrop-blur-xl sm:px-6 lg:px-7">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] border border-[var(--accent)]/18 bg-[linear-gradient(135deg,rgba(255,107,74,0.18),rgba(255,255,255,0.96))] text-sm font-semibold tracking-[-0.08em] text-[var(--ink)] shadow-[0_10px_26px_rgba(255,107,74,0.08)]">
                 CP
@@ -438,30 +518,14 @@ export function AnalyzerShell() {
               </div>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-3 xl:w-[600px]">
-              {[
-                {
-                  title: "Scan public channels",
-                  detail: "Turn any competitor URL into a ranked monthly view.",
-                },
-                {
-                  title: "Spot breakout formats",
-                  detail: "See which uploads are accelerating beyond the baseline.",
-                },
-                {
-                  title: "Share the brief",
-                  detail: "Export a focused set of winners for your next planning cycle.",
-                },
-              ].map((item) => (
-                <div
-                  key={item.title}
-                  className="rounded-[22px] border border-black/8 bg-white/62 px-4 py-3"
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+              {["Live channel scan", "Interactive filters", "CSV handoff"].map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full border border-black/8 bg-white/70 px-3 py-2 text-xs font-medium text-black/62"
                 >
-                  <p className="text-xs font-medium text-[var(--ink)]">{item.title}</p>
-                  <p className="mt-1 text-xs leading-5 text-[var(--muted)]">
-                    {item.detail}
-                  </p>
-                </div>
+                  {item}
+                </span>
               ))}
             </div>
           </div>
@@ -484,7 +548,7 @@ export function AnalyzerShell() {
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               <div className="rounded-[24px] border border-black/8 bg-white/60 p-4">
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-black/38">
-                  Winner board
+                  Current winners
                 </p>
                 <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
                   See the uploads outperforming the channel baseline in one ranked view.
@@ -528,28 +592,61 @@ export function AnalyzerShell() {
           <Panel className="fade-up rounded-[36px] px-6 py-7 sm:px-8 sm:py-9">
             <div className="flex items-center justify-between">
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-black/42">
-                How teams use it
+                Workspace flow
               </p>
               <span className="rounded-full border border-black/8 px-3 py-1 text-xs font-medium text-black/60">
                 Built for weekly planning
               </span>
             </div>
 
+            <div className="mt-6 space-y-3">
+              {[
+                {
+                  step: "01",
+                  title: "Scan a competitor channel",
+                  detail:
+                    "Paste a public YouTube URL and generate one working surface instead of hopping between tabs.",
+                },
+                {
+                  step: "02",
+                  title: "Narrow the winning pattern",
+                  detail:
+                    "Use KPI presets, filters, and topic shortcuts to isolate the slice that actually matters this week.",
+                },
+                {
+                  step: "03",
+                  title: "Hand off a clean brief",
+                  detail:
+                    "Share a focused view, export CSV, or open the source channel once the short list is ready.",
+                },
+              ].map((item) => (
+                <div
+                  key={item.step}
+                  className="grid gap-4 rounded-[26px] border border-black/8 bg-white/60 p-4 sm:grid-cols-[52px_minmax(0,1fr)]"
+                >
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--accent)]/18 bg-[var(--accent-soft)] text-sm font-semibold text-[var(--ink)]">
+                    {item.step}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-[var(--ink)]">{item.title}</p>
+                    <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                      {item.detail}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             <div className="mt-6 rounded-[28px] border border-black/8 bg-[var(--surface-strong)] p-5">
               <p className="text-sm font-medium text-[var(--ink)]">
-                What this workspace helps you answer
+                Inside the workspace
               </p>
-              <p className="mt-3 text-sm leading-7 text-[var(--muted)]">
-                Use the workspace to identify breakout uploads, understand which
-                content formats are compounding, and convert recent winners into a
-                focused brief for your team.
-              </p>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {[
-                  "Find breakout uploads quickly",
-                  "Compare titles, topics, and cadence",
-                  "Prioritize current winners over legacy hits",
-                  "Share a clean working list with the team",
+                  "Channel overview and KPI summary",
+                  "Velocity, lifecycle, and topic views",
+                  "Explicit filters and shareable state",
+                  "Export-ready ranked video table",
                 ].map((item) => (
                   <div
                     key={item}
@@ -560,73 +657,21 @@ export function AnalyzerShell() {
                 ))}
               </div>
             </div>
-
-            <div className="mt-6 rounded-[28px] border border-black/8 bg-black/[0.02] p-5">
-              <p className="text-sm font-medium text-[var(--ink)]">
-                Fast workflow
-              </p>
-              <ul className="mt-4 space-y-3 text-sm leading-7 text-[var(--muted)]">
-                <li>Start with Winners This Month to see which uploads are outpacing the current baseline.</li>
-                <li>Use tags, chart clicks, and title search to narrow to one pattern worth reacting to.</li>
-                <li>Export the filtered table once the result set matches the brief you want to share.</li>
-              </ul>
-            </div>
           </Panel>
         </section>
 
         {viewState === "loading" && !analysis ? <ResultsSkeleton /> : null}
 
-        {!analysis && viewState !== "loading" ? (
-          <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-            <Panel className="fade-up rounded-[32px] px-6 py-6 sm:px-8 sm:py-7">
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-black/42">
-                What shows up after analysis
-              </p>
-              <h2 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-[var(--ink)]">
-                A workspace that gets you from scan to action.
-              </h2>
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                {[
-                  "Channel overview and monthly KPI cards",
-                  "Views/day velocity chart",
-                  "Search, sort, and date filters",
-                  "Responsive ranked video table",
-                ].map((item) => (
-                  <div
-                    key={item}
-                    className="rounded-[24px] border border-black/8 bg-white/58 p-4 text-sm leading-6 text-[var(--muted)]"
-                  >
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </Panel>
-
-            <Panel className="fade-up rounded-[32px] px-6 py-6 sm:px-8 sm:py-7">
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-black/42">
-                Why the output feels useful
-              </p>
-              <h2 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-[var(--ink)]">
-                It is organized around the questions a strategist actually asks.
-              </h2>
-              <p className="mt-4 text-sm leading-7 text-[var(--muted)]">
-                Which uploads are winning right now, which ones are moving faster
-                than the channel baseline, and which topics are repeating enough
-                to deserve a response from your team.
-              </p>
-            </Panel>
-          </section>
-        ) : null}
-
         {analysis ? (
           <div className="grid gap-6">
-            <nav className="fade-up flex flex-wrap items-center gap-2 rounded-[24px] border border-black/8 bg-white/52 px-4 py-3">
+            <nav className="fade-up sticky top-4 z-20 flex flex-wrap items-center gap-2 rounded-[24px] border border-black/8 bg-white/70 px-4 py-3 shadow-[0_18px_42px_rgba(17,17,15,0.08)] backdrop-blur-xl">
               {[
                 { label: "Overview", target: "channel-overview" },
-                { label: "KPI summary", target: "kpi-summary" },
-                { label: "Signal charts", target: "signal-charts" },
+                { label: "Summary", target: "kpi-summary" },
+                { label: "Filters", target: "filters-panel" },
+                { label: "Results", target: "video-results" },
+                { label: "Signals", target: "signal-charts" },
                 { label: "Insights", target: "insight-panel" },
-                { label: "Video results", target: "video-results" },
               ].map((item) => (
                 <button
                   key={item.target}
@@ -658,48 +703,31 @@ export function AnalyzerShell() {
               <SummaryCards
                 analysis={analysis}
                 onPresetSelect={applyPreset}
+                activePreset={activeSummaryPreset}
               />
             </div>
 
-            <div className="grid gap-6 xl:grid-cols-[1.22fr_0.98fr]">
-              <div id="chart-panel">
-              <PerformanceChart
-                  videos={visibleVideos}
-                  onInspectVideo={inspectVideo}
-                />
-              </div>
-              <div id="insight-panel">
-                <InsightsPanel analysis={analysis} activeSort={filters.sort} />
-              </div>
-            </div>
-
-            <div id="signal-charts">
-              <SignalCharts
-                videos={visibleVideos}
-                channelName={analysis.channel.name}
-                channelHandle={analysis.channel.handle}
-                onTopicSelect={handleTagSelect}
+            <div id="filters-panel">
+              <FiltersBar
+                filters={filters}
+                totalCount={analysis.videos.length}
+                visibleCount={visibleVideos.length}
+                onChange={updateFilters}
+                onReset={() => {
+                  setFilters({
+                    ...defaultVideoFilters,
+                    dateRange: analysis.defaultDateRange,
+                  });
+                  setPagination(defaultPaginationState);
+                }}
+                onExport={handleExport}
+                onCopyShareLink={handleCopyShareLink}
+                exportDisabled={!visibleVideos.length}
+                shareLabel={shareLabel}
+                onPresetSelect={applyPreset}
+                activePreset={activeQuickPreset}
               />
             </div>
-
-            <FiltersBar
-              filters={filters}
-              totalCount={analysis.videos.length}
-              visibleCount={visibleVideos.length}
-              onChange={updateFilters}
-              onReset={() => {
-                setFilters({
-                  ...defaultVideoFilters,
-                  dateRange: analysis.defaultDateRange,
-                });
-                setPagination(defaultPaginationState);
-              }}
-              onExport={handleExport}
-              onCopyShareLink={handleCopyShareLink}
-              exportDisabled={!visibleVideos.length}
-              shareLabel={shareLabel}
-              onPresetSelect={applyPreset}
-            />
 
             <div id="video-results">
               <VideoTable
@@ -715,6 +743,27 @@ export function AnalyzerShell() {
                 onPageChange={handlePageChange}
                 onPageSizeChange={handlePageSizeChange}
                 onTagPick={handleTagSelect}
+              />
+            </div>
+
+            <div className="grid gap-6 xl:grid-cols-[1.22fr_0.98fr]">
+              <div id="velocity-panel">
+                <PerformanceChart
+                  videos={visibleVideos}
+                  onInspectVideo={inspectVideo}
+                />
+              </div>
+              <div id="insight-panel">
+                <InsightsPanel analysis={analysis} activeSort={filters.sort} />
+              </div>
+            </div>
+
+            <div id="signal-charts">
+              <SignalCharts
+                videos={visibleVideos}
+                channelName={analysis.channel.name}
+                channelHandle={analysis.channel.handle}
+                onTopicSelect={handleTagSelect}
               />
             </div>
           </div>
