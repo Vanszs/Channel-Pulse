@@ -26,6 +26,10 @@ import {
   parsePaginationFromSearchParams,
   parseVideoFiltersFromSearchParams,
 } from "@/lib/url-state";
+import {
+  ANALYZE_INTENT_HEADER,
+  ANALYZE_INTENT_VALUE,
+} from "@/lib/request-security";
 import { pickFastestMover } from "@/lib/topics";
 import { applyVideoFilters, defaultVideoFilters, type VideoFilters } from "@/lib/video-filters";
 import type {
@@ -269,7 +273,7 @@ export function AnalyzerShell() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-channel-pulse-request": "analyze",
+          [ANALYZE_INTENT_HEADER]: ANALYZE_INTENT_VALUE,
         },
         body: JSON.stringify({
           channelUrl: normalized.normalizedUrl,

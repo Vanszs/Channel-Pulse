@@ -6,9 +6,10 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://i.ytimg.com https://*.ytimg.com https://yt3.ggpht.com https://*.googleusercontent.com",
+  "img-src 'self' data: blob: https://i.ytimg.com https://*.ytimg.com https://*.ggpht.com https://*.googleusercontent.com",
   "font-src 'self' data:",
   `connect-src 'self'${isDevelopment ? " ws: wss:" : ""}`,
+  "frame-src 'none'",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -43,6 +44,10 @@ const securityHeaders = [
     value: "none",
   },
   {
+    key: "X-DNS-Prefetch-Control",
+    value: "off",
+  },
+  {
     key: "X-XSS-Protection",
     value: "0",
   },
@@ -67,7 +72,7 @@ const securityHeaders = [
     : [
         {
           key: "Strict-Transport-Security",
-          value: "max-age=31536000; includeSubDomains",
+          value: "max-age=63072000; includeSubDomains; preload",
         },
       ]),
 ];
