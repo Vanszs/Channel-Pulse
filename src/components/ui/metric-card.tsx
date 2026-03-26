@@ -36,7 +36,7 @@ export function MetricCard({
             active ? "text-[var(--accent)]" : "text-black/48",
           )}
         >
-          {active ? "Selected view" : actionLabel}
+          {active ? "Active view" : actionLabel}
         </p>
       ) : null}
     </>

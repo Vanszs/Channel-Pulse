@@ -184,30 +184,30 @@ export function AnalyzerShell() {
   const [pagination, setPagination] = useState<PaginationState>(defaultPaginationState);
   const [viewState, setViewState] = useState<ViewState>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [copyLabel, setCopyLabel] = useState("Copy brief");
-  const [shareLabel, setShareLabel] = useState("Copy link");
+  const [copyLabel, setCopyLabel] = useState("Copy summary");
+  const [shareLabel, setShareLabel] = useState("Copy workspace link");
   const [hasHydratedFromUrl, setHasHydratedFromUrl] = useState(false);
   const deferredSearch = useDeferredValue(filters.search);
 
   useEffect(() => {
-    if (copyLabel === "Copy brief") {
+    if (copyLabel === "Copy summary") {
       return undefined;
     }
 
     const timeout = window.setTimeout(() => {
-      setCopyLabel("Copy brief");
+      setCopyLabel("Copy summary");
     }, 1800);
 
     return () => window.clearTimeout(timeout);
   }, [copyLabel]);
 
   useEffect(() => {
-    if (shareLabel === "Copy link") {
+    if (shareLabel === "Copy workspace link") {
       return undefined;
     }
 
     const timeout = window.setTimeout(() => {
-      setShareLabel("Copy link");
+      setShareLabel("Copy workspace link");
     }, 1800);
 
     return () => window.clearTimeout(timeout);
@@ -444,20 +444,20 @@ export function AnalyzerShell() {
 
     const activeSet = visibleVideos;
     const summary = activeSet.length
-      ? `${analysis.channel.name} currently has ${activeSet.length} videos in the ${getSegmentLabel(
+      ? `Channel Pulse summary for ${analysis.channel.name}: ${activeSet.length} videos are visible in the ${getSegmentLabel(
           filters.segment,
-        )}. The current table is sorted by ${getSortLabel(filters.sort)}. Top row: ${
-          activeSet[0].title
-        }. Fastest mover in this view: ${
+        )}. The workspace is currently ranked by ${getSortLabel(
+          filters.sort,
+        )}. Top result: ${activeSet[0].title}. Fastest mover in this view: ${
           pickFastestMover(activeSet)?.title ?? activeSet[0].title
         } at ${formatCompactNumber(
           pickFastestMover(activeSet)?.viewsPerDay ?? activeSet[0].viewsPerDay,
         )}/day. Source: ${analysis.channel.url}`
-      : `${analysis.channel.name} currently has no videos in the active filtered view. Clear the search, widen the date range, or lower the minimum views threshold before sharing this brief. Source: ${analysis.channel.url}`;
+      : `Channel Pulse summary for ${analysis.channel.name}: no videos are visible in the current view. Broaden the date range, lower the minimum views threshold, or clear the search before sharing this workspace. Source: ${analysis.channel.url}`;
 
     try {
       await navigator.clipboard.writeText(summary);
-      setCopyLabel("Copied");
+      setCopyLabel("Summary copied");
     } catch {
       setCopyLabel("Retry copy");
     }
@@ -481,7 +481,7 @@ export function AnalyzerShell() {
       await navigator.clipboard.writeText(shareUrl);
       setShareLabel("Link copied");
     } catch {
-      setShareLabel("Retry link");
+      setShareLabel("Retry copy");
     }
   }
 
@@ -513,13 +513,13 @@ export function AnalyzerShell() {
                   Channel Pulse
                 </p>
                 <p className="mt-1 text-sm text-[var(--muted)]">
-                  Competitive YouTube research workspace for strategy and growth teams.
+                  Competitive intelligence for YouTube teams that need clarity fast.
                 </p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-              {["Live channel scan", "Interactive filters", "CSV handoff"].map((item) => (
+              {["Live channel scan", "Shareable workspace", "CSV export"].map((item) => (
                 <span
                   key={item}
                   className="rounded-full border border-black/8 bg-white/70 px-3 py-2 text-xs font-medium text-black/62"
@@ -534,40 +534,40 @@ export function AnalyzerShell() {
         <section className="grid gap-6 xl:grid-cols-[1.35fr_0.92fr]">
           <Panel className="fade-up rounded-[36px] px-6 py-7 sm:px-8 sm:py-9">
             <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-black/42">
-              Competitive research workspace
+              Competitive intelligence
             </p>
             <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.08em] text-[var(--ink)] sm:text-5xl lg:text-[3.8rem]">
-              Turn any YouTube channel into a clear view of what is winning right now.
+              Turn any YouTube channel into a weekly competitor brief.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-[var(--muted)] sm:text-lg">
-              Paste a public competitor URL to rank recent uploads by momentum,
-              compare repeatable themes, and turn the strongest patterns into a brief
-              your team can act on this week.
+              Paste a public competitor URL to surface breakout uploads, compare
+              repeatable themes, and leave with a ranked view your team can act on in
+              minutes.
             </p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               <div className="rounded-[24px] border border-black/8 bg-white/60 p-4">
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-black/38">
-                  Current winners
+                  Winning uploads
                 </p>
                 <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-                  See the uploads outperforming the channel baseline in one ranked view.
+                  See which recent uploads are outperforming the channel baseline in one clear shortlist.
                 </p>
               </div>
               <div className="rounded-[24px] border border-black/8 bg-white/60 p-4">
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-black/38">
-                  Signal view
+                  Pattern clarity
                 </p>
                 <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-                  Separate fast risers from legacy hits with velocity, reach, and recency.
+                  Separate rising videos from legacy hits with velocity, reach, and recency signals.
                 </p>
               </div>
               <div className="rounded-[24px] border border-black/8 bg-white/60 p-4">
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-black/38">
-                  Team handoff
+                  Team-ready handoff
                 </p>
                 <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-                  Filter, isolate, and export the exact set you want to share internally.
+                  Filter, isolate, and export the exact shortlist you want to circulate internally.
                 </p>
               </div>
             </div>
@@ -592,10 +592,10 @@ export function AnalyzerShell() {
           <Panel className="fade-up rounded-[36px] px-6 py-7 sm:px-8 sm:py-9">
             <div className="flex items-center justify-between">
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-black/42">
-                Workspace flow
+                Weekly workflow
               </p>
               <span className="rounded-full border border-black/8 px-3 py-1 text-xs font-medium text-black/60">
-                Built for weekly planning
+                Built for lean teams
               </span>
             </div>
 
@@ -603,21 +603,21 @@ export function AnalyzerShell() {
               {[
                 {
                   step: "01",
-                  title: "Scan a competitor channel",
+                  title: "Scan one channel",
                   detail:
-                    "Paste a public YouTube URL and generate one working surface instead of hopping between tabs.",
+                    "Paste a public YouTube URL and generate one working surface instead of bouncing between tabs.",
                 },
                 {
                   step: "02",
-                  title: "Narrow the winning pattern",
+                  title: "Pressure-test the pattern",
                   detail:
                     "Use KPI presets, filters, and topic shortcuts to isolate the slice that actually matters this week.",
                 },
                 {
                   step: "03",
-                  title: "Hand off a clean brief",
+                  title: "Share the shortlist",
                   detail:
-                    "Share a focused view, export CSV, or open the source channel once the short list is ready.",
+                    "Copy a focused summary, share the workspace link, or export CSV once the shortlist is ready.",
                 },
               ].map((item) => (
                 <div
@@ -639,14 +639,14 @@ export function AnalyzerShell() {
 
             <div className="mt-6 rounded-[28px] border border-black/8 bg-[var(--surface-strong)] p-5">
               <p className="text-sm font-medium text-[var(--ink)]">
-                Inside the workspace
+                What you get
               </p>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {[
-                  "Channel overview and KPI summary",
-                  "Velocity, lifecycle, and topic views",
-                  "Explicit filters and shareable state",
-                  "Export-ready ranked video table",
+                  "Channel snapshot and KPI baseline",
+                  "Filters, presets, and shareable state",
+                  "Ranked uploads with topic shortcuts",
+                  "Signal charts for timing and format",
                 ].map((item) => (
                   <div
                     key={item}
@@ -667,7 +667,7 @@ export function AnalyzerShell() {
             <nav className="fade-up sticky top-4 z-20 flex flex-wrap items-center gap-2 rounded-[24px] border border-black/8 bg-white/70 px-4 py-3 shadow-[0_18px_42px_rgba(17,17,15,0.08)] backdrop-blur-xl">
               {[
                 { label: "Overview", target: "channel-overview" },
-                { label: "Summary", target: "kpi-summary" },
+                { label: "Snapshot", target: "kpi-summary" },
                 { label: "Filters", target: "filters-panel" },
                 { label: "Results", target: "video-results" },
                 { label: "Signals", target: "signal-charts" },
@@ -686,7 +686,7 @@ export function AnalyzerShell() {
 
             {viewState === "loading" ? (
               <div className="fade-up rounded-[24px] border border-black/8 bg-white/58 px-5 py-4 text-sm text-[var(--muted)]">
-                Refreshing the analysis with the latest channel input...
+                Refreshing the workspace with the latest channel data...
               </div>
             ) : null}
 

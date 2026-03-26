@@ -37,28 +37,28 @@ export function PerformanceChart({ videos, onInspectVideo }: PerformanceChartPro
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-end">
         <div className="max-w-2xl">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-black/42">
-            Velocity chart
+            Velocity
           </p>
           <h3 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-[var(--ink)]">
-            Which uploads are moving fastest right now
+            Where current momentum is concentrating
           </h3>
           <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-            Daily view velocity across the currently visible set. Use this to spot
-            fast risers, not just the biggest back-catalog titles. Click a row to
-            isolate that upload in the results table.
+            Compare daily view velocity across the current shortlist so rising
+            uploads stand out before legacy hits dominate the view. Select a row to
+            isolate it in the results table.
           </p>
         </div>
 
         <div className="rounded-[24px] border border-black/8 bg-white/60 px-4 py-4">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-black/38">
-            Visible leaders
+            Fast movers
           </p>
           <p className="mt-2 text-2xl font-semibold tracking-[-0.05em] text-[var(--ink)]">
             {chartVideos.length}
           </p>
           <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-            The fastest movers in your current view. Each row narrows the main table
-            to one source video.
+            The quickest-moving uploads in your current workspace. Each row narrows
+            the main table to a single source video.
           </p>
         </div>
       </div>
@@ -114,7 +114,7 @@ export function PerformanceChart({ videos, onInspectVideo }: PerformanceChartPro
           ))
         ) : (
           <div className="rounded-[24px] border border-black/8 bg-white/58 px-4 py-4 text-sm text-[var(--muted)]">
-            No videos match the current filters, so there is no velocity leaderboard to compare yet.
+            No videos match the current filters, so there is no velocity readout to compare yet.
           </div>
         )}
       </div>

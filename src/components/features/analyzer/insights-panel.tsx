@@ -17,22 +17,22 @@ const weightLabels: Record<keyof ScoreVector, string> = {
 
 function getSortDescription(sort: InsightsPanelProps["activeSort"]) {
   if (sort === "views") {
-    return "The table is currently ordered by total views.";
+    return "The shortlist is currently ranked by total views.";
   }
 
   if (sort === "viewsPerDay") {
-    return "The table is currently ordered by views per day.";
+    return "The shortlist is currently ranked by daily view velocity.";
   }
 
   if (sort === "recency") {
-    return "The table is currently ordered by most recent publish date.";
+    return "The shortlist is currently ranked by newest publish date.";
   }
 
   if (sort === "performance") {
-    return "The table is currently ordered by performance score.";
+    return "The shortlist is currently ranked by performance score.";
   }
 
-  return "The table is currently ordered by momentum score.";
+  return "The shortlist is currently ranked by momentum score.";
 }
 
 export function InsightsPanel({ analysis, activeSort }: InsightsPanelProps) {
@@ -44,10 +44,10 @@ export function InsightsPanel({ analysis, activeSort }: InsightsPanelProps) {
     <Panel className="fade-up rounded-[32px] px-6 py-6 sm:px-8 sm:py-7">
       <div>
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-black/42">
-          Insight panel
+          Strategy notes
         </p>
         <h3 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-[var(--ink)]">
-          What the competitor is teaching you
+          What this channel is signaling
         </h3>
       </div>
 
@@ -74,14 +74,14 @@ export function InsightsPanel({ analysis, activeSort }: InsightsPanelProps) {
 
       <div>
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-black/42">
-          List order
+          Current ranking
         </p>
         <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
           {getSortDescription(activeSort)}
         </p>
 
         <p className="mt-5 text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-black/42">
-          Performance score model
+          Scoring model
         </p>
         <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
           {analysis.scoreExplanation.formula}

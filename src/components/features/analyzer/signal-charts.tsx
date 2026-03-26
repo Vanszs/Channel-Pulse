@@ -113,19 +113,19 @@ export function SignalCharts({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-black/42">
-              Topic chart
+              Theme signals
             </p>
             <h3 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-[var(--ink)]">
-              Repeated themes carrying momentum
+              Repeated topics with real traction
             </h3>
             <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--muted)]">
-              Only themes that repeat across at least two visible videos are shown
-              here, so the chart reflects a real pattern instead of isolated title words.
+              Only themes that repeat across at least two visible uploads appear
+              here, so the chart reflects a real pattern instead of one-off title language.
             </p>
           </div>
           {topicRows.length ? (
             <span className="rounded-full border border-black/8 bg-white/74 px-3 py-1 text-xs font-medium text-black/60">
-              Click to filter
+              Click to focus
             </span>
           ) : null}
         </div>
@@ -163,8 +163,8 @@ export function SignalCharts({
             ))
           ) : (
             <div className="rounded-[24px] border border-black/8 bg-white/58 px-4 py-4 text-sm text-[var(--muted)]">
-              No repeated themes are strong enough in this visible set yet. Broaden
-              the date range or clear title and tag filters to surface stronger topic clusters.
+              This view does not yet contain a repeated theme with enough signal.
+              Broaden the date range or clear filters to surface stronger clusters.
             </div>
           )}
         </div>
@@ -172,11 +172,15 @@ export function SignalCharts({
 
       <Panel className="fade-up rounded-[32px] px-6 py-6 sm:px-8 sm:py-7">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-black/42">
-          Lifecycle chart
+          Momentum mix
         </p>
         <h3 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-[var(--ink)]">
-          How the visible set is distributed
+          How momentum is distributed
         </h3>
+        <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
+          A quick read on how much of the current shortlist is breaking out, holding
+          steady, or cooling off.
+        </p>
 
         {videos.length ? (
           <>
@@ -212,18 +216,22 @@ export function SignalCharts({
           </>
         ) : (
           <div className="mt-6 rounded-[24px] border border-black/8 bg-white/58 px-4 py-4 text-sm text-[var(--muted)]">
-            No videos match the current filters, so lifecycle distribution is unavailable.
+            No videos match the current filters, so this momentum mix is unavailable.
           </div>
         )}
       </Panel>
 
       <Panel className="fade-up rounded-[32px] px-6 py-6 sm:px-8 sm:py-7">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-black/42">
-          Runtime chart
+          Runtime signals
         </p>
         <h3 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-[var(--ink)]">
-          Which runtime bands are working
+          Which runtimes are earning attention
         </h3>
+        <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
+          Compare runtime bands by daily velocity to see whether shorter, mid-length,
+          or longer formats are carrying the strongest pull.
+        </p>
 
         <div className="mt-6 space-y-4">
           {runtimeRows.length ? (
@@ -255,7 +263,7 @@ export function SignalCharts({
             ))
           ) : (
             <div className="rounded-[24px] border border-black/8 bg-white/58 px-4 py-4 text-sm text-[var(--muted)]">
-              No videos match the current filters, so runtime bands cannot be compared yet.
+              No videos match the current filters, so runtime patterns cannot be compared yet.
             </div>
           )}
         </div>

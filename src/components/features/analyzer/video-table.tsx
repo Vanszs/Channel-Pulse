@@ -45,9 +45,10 @@ export function VideoTable({
   if (!totalCount) {
     return (
       <div className="fade-up panel rounded-[32px] px-6 py-8 text-center sm:px-8">
-        <p className="text-lg font-medium text-[var(--ink)]">No videos match the current filters.</p>
+        <p className="text-lg font-medium text-[var(--ink)]">No uploads match the current view.</p>
         <p className="mt-2 text-sm text-[var(--muted)]">
-          Widen the date window, lower the minimum views, or clear the title or tag search.
+          Broaden the date window, lower the minimum views threshold, or clear the
+          search to reopen the shortlist.
         </p>
       </div>
     );
@@ -58,14 +59,14 @@ export function VideoTable({
       <div className="panel overflow-hidden rounded-[32px]">
         <div className="border-b border-black/8 px-6 py-6 sm:px-8">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-black/42">
-            Winning videos
+            Ranked results
           </p>
           <h3 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-[var(--ink)]">
-            Ranked competitor uploads
+            Competitor shortlist
           </h3>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-            Open a title to watch the source video, or tap a tag to turn a recurring
-            topic into a filtered view.
+            Open any title to review the source video, or click a topic chip to
+            narrow the workspace to a recurring pattern.
           </p>
         </div>
 
@@ -179,7 +180,7 @@ export function VideoTable({
                     rel="noreferrer"
                     className="rounded-full border border-black/10 bg-white/72 px-3 py-2 text-xs font-medium text-[var(--ink)] transition hover:border-black/18 hover:bg-white"
                   >
-                    Open on YouTube
+                    Watch source
                   </a>
                   {topicChips.map((tag) => (
                     <button

@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     template: "%s | Channel Pulse",
   },
   description:
-    "Analyze a competitor's YouTube channel and spot the videos winning right now.",
+    "Analyze any YouTube channel, surface breakout uploads, and turn competitor activity into a clear weekly brief.",
   applicationName: "Channel Pulse",
 };
 

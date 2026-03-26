@@ -100,23 +100,23 @@ export function FiltersBar({
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-black/42">
-            Sort and filter
+            Workspace controls
           </p>
           <h3 className="mt-3 text-2xl font-semibold tracking-[-0.05em] text-[var(--ink)]">
-            Shape the result set before you scan details
+            Refine the shortlist before you review individual videos
           </h3>
         </div>
         <p className="text-sm leading-6 text-[var(--muted)]">
-          Showing {visibleCount} of {totalCount} videos after filtering.
+          Showing {visibleCount} of {totalCount} ranked uploads in the current view.
         </p>
       </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
         {[
-          { label: "Top momentum", preset: "momentum" as const },
-          { label: "Fresh uploads", preset: "fresh" as const },
-          { label: "Highest views/day", preset: "velocity" as const },
-          { label: "Highest total views", preset: "reach" as const },
+          { label: "Momentum leaders", preset: "momentum" as const },
+          { label: "Newest uploads", preset: "fresh" as const },
+          { label: "Fastest velocity", preset: "velocity" as const },
+          { label: "Largest reach", preset: "reach" as const },
         ].map((preset) => (
           <button
             key={preset.label}
@@ -133,7 +133,7 @@ export function FiltersBar({
         ))}
         {hasActiveFilters ? (
           <span className="ml-auto text-xs font-medium uppercase tracking-[0.2em] text-black/40">
-            Active filters
+            Current filters
           </span>
         ) : null}
       </div>
@@ -141,11 +141,11 @@ export function FiltersBar({
       <div className="mt-6 grid gap-4 xl:grid-cols-[1.55fr_0.85fr_0.95fr_0.85fr_0.95fr]">
         <label className="grid gap-2">
           <span className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-black/38">
-            Search titles or tags
+            Search titles or themes
           </span>
           <input
             type="search"
-            placeholder="Find a title, tag, or recurring theme"
+            placeholder="Search titles, tags, or recurring themes"
             value={filters.search}
             onChange={(event) => onChange({ search: event.target.value })}
             className="h-12 rounded-2xl border border-black/10 bg-white/80 px-4 outline-none transition focus:border-black/22"
@@ -246,7 +246,7 @@ export function FiltersBar({
             ))
           ) : (
             <p className="text-sm text-[var(--muted)]">
-              Use presets, explicit filters, or KPI cards to reshape the visible set.
+              Use presets, KPI cards, or manual filters to focus the shortlist.
             </p>
           )}
         </div>
@@ -258,7 +258,7 @@ export function FiltersBar({
             disabled={exportDisabled}
             className="inline-flex h-12 items-center justify-center rounded-full border border-[var(--accent)]/18 bg-[linear-gradient(135deg,rgba(255,107,74,0.16),rgba(255,255,255,0.96))] px-5 text-sm font-medium text-[var(--ink)] shadow-[0_10px_24px_rgba(255,107,74,0.1)] transition hover:-translate-y-0.5 hover:border-[var(--accent)]/28 hover:shadow-[0_14px_30px_rgba(255,107,74,0.14)] disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Export CSV
+            Export shortlist
           </button>
           <button
             type="button"
@@ -272,14 +272,14 @@ export function FiltersBar({
             onClick={onReset}
             className="inline-flex h-12 items-center justify-center rounded-full border border-black/10 bg-white/72 px-5 text-sm font-medium text-[var(--ink)] transition hover:border-black/18 hover:bg-white"
           >
-            Reset filters
+            Reset view
           </button>
         </div>
       </div>
 
       <div className="mt-6 flex flex-wrap items-center gap-2 rounded-[24px] border border-black/8 bg-white/56 px-4 py-3">
         <span className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-black/38">
-          Trend guide
+          Lifecycle guide
         </span>
         <TrendBadge trend="up" lifecycle="Breakout" />
         <TrendBadge trend="steady" lifecycle="Steady" />
