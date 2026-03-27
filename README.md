@@ -35,7 +35,7 @@ The current build uses the real YouTube Data API v3 behind a thin Next.js API ro
 
 No external UI kit, charting library, or state library was added.
 
-## Local Setup
+## Setup Instructions
 
 Requirements: Node.js 20+ and npm.
 
@@ -74,6 +74,9 @@ npm run typecheck
 ## Architecture Notes
 
 The app follows the `$fullstack-developer` skill guidance by separating concerns across route handlers, services, typed contracts, UI components, and utilities.
+
+Skill reference:
+https://skillsmp.com/skills/shubhamsaboo-awesome-llm-apps-awesome-agent-skills-fullstack-developer-skill-md
 
 ```text
 src/
@@ -126,6 +129,18 @@ Because the YouTube API does not provide historical daily view curves for arbitr
 - support benchmarking across multiple competitors
 - add auth, saved workspaces, and team exports
 
+## Build Approach
+
+I approached the build like a production-minded MVP rather than a one-file prototype:
+
+- lock the product goal and information hierarchy first
+- keep the request boundary thin and push non-trivial logic into services and utilities
+- get the live YouTube data shape stable before polishing the UI
+- improve the UX in passes so loading, empty, error, filtering, export, and responsive behavior all feel intentional
+- harden the app after feature completion with stricter request validation, rate limiting, safer headers, and cleaner external-link behavior
+
+This let the project move quickly without sacrificing maintainability. The frontend stays modular, the backend-facing logic is replaceable, and the app remains easy to extend into a more complete SaaS product later.
+
 ## Simulated Commit History
 
 1. `init next app with tailwind and typed app router`
@@ -136,6 +151,8 @@ Because the YouTube API does not provide historical daily view curves for arbitr
 6. `compose analyzer shell with loading, empty, and error states`
 7. `add channel summary, kpis, chart, insights, and responsive video list`
 8. `write README, architecture notes, and verify production build`
+
+The actual git history also includes additional polish and security passes after the MVP was working. That is normal for a real product build. The simulated history above is the cleaner high-level narrative of how the feature was built.
 
 ## Delivery Reflection
 
@@ -162,6 +179,8 @@ Because the YouTube API does not provide historical daily view curves for arbitr
 
 ### How `$fullstack-developer` Was Used
 
+- Reference skill:
+  https://skillsmp.com/skills/shubhamsaboo-awesome-llm-apps-awesome-agent-skills-fullstack-developer-skill-md
 - Project structure follows the skill's `app`, `components`, `lib`, `services`, and `types` split.
 - External input is validated at both the client form boundary and the API route boundary.
 - The API route stays thin while the service owns non-trivial business logic.
