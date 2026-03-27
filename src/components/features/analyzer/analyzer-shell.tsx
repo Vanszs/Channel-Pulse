@@ -352,6 +352,7 @@ export function AnalyzerShell() {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: {
+          Accept: "application/json",
           "Content-Type": "application/json",
           [ANALYZE_INTENT_HEADER]: ANALYZE_INTENT_VALUE,
         },

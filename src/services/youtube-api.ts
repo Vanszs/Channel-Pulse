@@ -132,6 +132,7 @@ export type YouTubeChannelSnapshot = {
 const YOUTUBE_API_ROOT = "https://www.googleapis.com/youtube/v3/";
 const HTML_CHANNEL_ID_PATTERN =
   /https:\/\/www\.youtube\.com\/channel\/(UC[\w-]{20,})/;
+const YOUTUBE_FETCH_TIMEOUT_MS = 10_000;
 
 let cachedEnvLocalApiKey: string | null | undefined;
 
@@ -210,6 +211,27 @@ function mapYouTubeApiError(error: YouTubeApiError | undefined, status = 500) {
   );
 }
 
+function mapYouTubeFetchFailure(error: unknown) {
+  if (error instanceof ChannelAnalysisError) {
+    return error;
+  }
+
+  if (
+    error instanceof Error &&
+    (error.name === "AbortError" || error.name === "TimeoutError")
+  ) {
+    return new ChannelAnalysisError(
+      "YouTube took too long to respond. Please try again in a moment.",
+      { status: 504 },
+    );
+  }
+
+  return new ChannelAnalysisError(
+    "We could not reach YouTube right now. Please try again in a moment.",
+    { status: 502 },
+  );
+}
+
 async function youtubeFetch<T extends YouTubeApiResponse>(
   path: string,
   searchParams: Record<string, string | undefined>,
@@ -225,16 +247,21 @@ async function youtubeFetch<T extends YouTubeApiResponse>(
     }
   }
 
-  const response = await fetch(url, {
-    cache: "no-store",
-  });
-  const payload = (await response.json()) as T;
+  try {
+    const response = await fetch(url, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(YOUTUBE_FETCH_TIMEOUT_MS),
+    });
+    const payload = (await response.json()) as T;
 
-  if (!response.ok || payload.error) {
-    throw mapYouTubeApiError(payload.error, response.status);
+    if (!response.ok || payload.error) {
+      throw mapYouTubeApiError(payload.error, response.status);
+    }
+
+    return payload;
+  } catch (error) {
+    throw mapYouTubeFetchFailure(error);
   }
-
-  return payload;
 }
 
 function pickThumbnailUrl(thumbnails?: YouTubeThumbnailMap) {
@@ -270,14 +297,21 @@ function toHandle(customUrl: string | undefined, fallback: string) {
 }
 
 async function resolveChannelIdFromHtml(url: string): Promise<ResolvedChannelReference> {
-  const response = await fetch(url, {
-    cache: "no-store",
-    headers: {
-      "accept-language": "en-US,en;q=0.9",
-      "user-agent":
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36",
-    },
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(url, {
+      cache: "no-store",
+      headers: {
+        "accept-language": "en-US,en;q=0.9",
+        "user-agent":
+          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36",
+      },
+      signal: AbortSignal.timeout(YOUTUBE_FETCH_TIMEOUT_MS),
+    });
+  } catch (error) {
+    throw mapYouTubeFetchFailure(error);
+  }
 
   if (!response.ok) {
     throw new ChannelAnalysisError(

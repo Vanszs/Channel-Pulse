@@ -5,8 +5,10 @@ import { applyRateLimit, getClientAddress } from "@/lib/rate-limit";
 import {
   ANALYZE_INTENT_HEADER,
   ANALYZE_INTENT_VALUE,
+  acceptsJsonResponse,
   buildNoStoreHeaders,
   hasJsonContentType,
+  isPlainObject,
   isAllowedSameOriginRequest,
   parseJsonBody,
 } from "@/lib/request-security";
@@ -52,6 +54,51 @@ function buildRateLimitHeaders(result: {
   };
 }
 
+function validateAnalyzeRequest(
+  value: unknown,
+): { ok: true; channelUrl: string } | { ok: false; error: string; field: "channelUrl" | "general" } {
+  if (!isPlainObject(value)) {
+    return {
+      ok: false,
+      error: "Request body must be a JSON object.",
+      field: "general",
+    };
+  }
+
+  const keys = Object.keys(value);
+
+  if (keys.length !== 1 || !keys.includes("channelUrl")) {
+    return {
+      ok: false,
+      error: "Only the channelUrl field is accepted by this endpoint.",
+      field: "general",
+    };
+  }
+
+  if (typeof value.channelUrl !== "string") {
+    return {
+      ok: false,
+      error: "Paste a YouTube channel URL to begin.",
+      field: "channelUrl",
+    };
+  }
+
+  const channelUrl = value.channelUrl.trim();
+
+  if (!channelUrl) {
+    return {
+      ok: false,
+      error: "Paste a YouTube channel URL to begin.",
+      field: "channelUrl",
+    };
+  }
+
+  return {
+    ok: true,
+    channelUrl,
+  };
+}
+
 export function OPTIONS() {
   return new NextResponse(null, {
     status: 405,
@@ -77,6 +124,15 @@ export async function POST(request: Request) {
             Math.ceil((rateLimit.resetAt - Date.now()) / 1000),
           )}`,
         },
+      );
+    }
+
+    if (!acceptsJsonResponse(request.headers.get("accept"))) {
+      return jsonError(
+        "This endpoint only returns JSON responses.",
+        406,
+        "general",
+        buildRateLimitHeaders(rateLimit),
       );
     }
 
@@ -120,16 +176,18 @@ export async function POST(request: Request) {
 
     const body = parsedBody.data;
 
-    if (!body.channelUrl || typeof body.channelUrl !== "string") {
+    const validatedRequest = validateAnalyzeRequest(body);
+
+    if (!validatedRequest.ok) {
       return jsonError(
-        "Paste a YouTube channel URL to begin.",
+        validatedRequest.error,
         400,
-        "channelUrl",
+        validatedRequest.field,
         buildRateLimitHeaders(rateLimit),
       );
     }
 
-    if (body.channelUrl.length > MAX_CHANNEL_URL_LENGTH) {
+    if (validatedRequest.channelUrl.length > MAX_CHANNEL_URL_LENGTH) {
       return jsonError(
         "That YouTube URL is longer than expected.",
         400,
@@ -138,7 +196,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const normalized = normalizeYouTubeChannelInput(body.channelUrl);
+    const normalized = normalizeYouTubeChannelInput(validatedRequest.channelUrl);
 
     if (!normalized.ok) {
       return jsonError(

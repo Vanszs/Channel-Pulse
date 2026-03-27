@@ -132,13 +132,13 @@ export function ChannelHeader({
             >
               {copyLabel}
             </button>
-            <a
-              href={analysis.channel.url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex h-11 items-center justify-center rounded-full border border-black/10 bg-white/74 px-5 text-sm font-medium text-[var(--ink)] transition hover:border-black/18 hover:bg-white"
-            >
-              View on YouTube
+              <a
+                href={analysis.channel.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-black/10 bg-white/74 px-5 text-sm font-medium text-[var(--ink)] transition hover:border-black/18 hover:bg-white"
+              >
+                View on YouTube
             </a>
           </div>
 
@@ -170,7 +170,7 @@ export function ChannelHeader({
               <a
                 href={analysis.channel.url}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="mono-data mt-1 block text-xs text-black/56 underline-offset-4 transition hover:text-[var(--ink)] hover:underline"
               >
                 {formatHostname(analysis.channel.url)}

@@ -102,7 +102,7 @@ export function VideoTable({
                   <a
                     href={`https://www.youtube.com/watch?v=${video.id}`}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="shrink-0"
                   >
                     <VideoThumbnail
@@ -121,7 +121,7 @@ export function VideoTable({
                     <a
                       href={`https://www.youtube.com/watch?v=${video.id}`}
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                       className="mt-2 block text-sm font-medium leading-6 text-[var(--ink)] transition hover:text-black/66"
                     >
                       {video.title}
@@ -177,7 +177,7 @@ export function VideoTable({
                   <a
                     href={`https://www.youtube.com/watch?v=${video.id}`}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="rounded-full border border-black/10 bg-white/72 px-3 py-2 text-xs font-medium text-[var(--ink)] transition hover:border-black/18 hover:bg-white"
                   >
                     Watch source
@@ -234,7 +234,7 @@ export function VideoTable({
                   <a
                     href={`https://www.youtube.com/watch?v=${video.id}`}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="shrink-0"
                   >
                     <VideoThumbnail
@@ -247,7 +247,7 @@ export function VideoTable({
                     <a
                       href={`https://www.youtube.com/watch?v=${video.id}`}
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                       className="text-sm font-medium leading-6 text-[var(--ink)] transition hover:text-black/66"
                     >
                       {video.title}
@@ -259,7 +259,7 @@ export function VideoTable({
                       <a
                         href={`https://www.youtube.com/watch?v=${video.id}`}
                         target="_blank"
-                        rel="noreferrer"
+                        rel="noopener noreferrer"
                         className="text-xs font-medium text-[var(--ink)] underline-offset-4 transition hover:underline"
                       >
                         Watch
